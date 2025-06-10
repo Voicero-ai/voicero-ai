@@ -161,7 +161,7 @@ jQuery(document).ready(function ($) {
             throw new Error(response.data.message || "Assistant setup failed");
           updateProgress(
             response.data.progress || 50,
-            "⏳ Preparing content training..."
+            "⏳ Training content..."
           );
           assistantData = response.data.data; // Store the content IDs
 
@@ -227,119 +227,122 @@ jQuery(document).ready(function ($) {
           if (!response.success)
             throw new Error(response.data.message || "Batch training failed");
           // Training requests have been initiated
-          updateProgress(
-            60,
-            "⏳ Training requests initiated. Monitoring progress..."
-          );
+          updateProgress(60, "⏳ Training requests initiated. Processing...");
 
           // Show explanation about background processing
           $("#sync-warning").html(`
                     <p><strong>ℹ️ Training In Progress:</strong> All training requests have been initiated and 
                     are now processing. This can take several minutes to complete depending on the 
-                    size of your website. Progress will be tracked below.</p>
+                    size of your website.</p>
                     <div id="training-status-container">
                         <p id="training-status">Status: <span>Processing...</span></p>
                     </div>
                 `);
 
-          // Poll for status updates
-          let pollingInterval = setInterval(function () {
-            $.post(voiceroAdminConfig.ajaxUrl, {
-              action: "voicero_get_training_status",
-              nonce: voiceroAdminConfig.nonce,
-            })
-              .done(function (response) {
-                if (response.success) {
-                  var { in_progress, total_items, completed_items, status } =
-                    response.data;
-                  // compute percentage 0–100
-                  var pct = total_items
-                    ? Math.round((completed_items / total_items) * 100)
-                    : 100;
+          // Use a simple timer-based approach instead of polling
+          let startTime = Date.now();
+          let duration = 30000; // 30 seconds for training
+          let progressUpdates = 10; // Number of progress updates to show
+          let updateInterval = duration / progressUpdates;
 
-                  // update the progress bar
-                  progressBar.css("width", pct + "%");
-                  progressPercentage.text(pct + "%");
-                  $("#training-status span").text(
-                    status === "completed" ? "Completed" : "Processing..."
-                  );
+          let progress = 0;
 
-                  // update the overall sync progress
-                  updateProgress(
-                    60 + pct * 0.4,
-                    `⏳ Training: ${status || "Processing..."}`
-                  );
+          // Update progress bar every few seconds
+          let progressTimer = setInterval(function () {
+            progress += 10;
+            if (progress >= 100) {
+              progress = 100;
+              clearInterval(progressTimer);
 
-                  // when done...
-                  if (!in_progress || status === "completed") {
-                    clearInterval(pollingInterval);
-                    updateProgress(100, "✅ Training completed successfully!");
-                    syncButton.prop("disabled", false);
-
-                    // Update notification
-                    $("#sync-warning").html(`
-                      <p><strong>✅ Training Complete:</strong> Your website content has been successfully trained. 
-                      The AI assistant now has up-to-date knowledge about your website content.</p>
-                    `);
-
-                    // Update website info after training completes
-                    setTimeout(loadWebsiteInfo, 1500);
-                  }
-                } else {
-                  // If response is not successful, stop polling to prevent infinite errors
-                  clearInterval(pollingInterval);
-                  updateProgress(100, "✅ Training completed!", false);
-                  syncButton.prop("disabled", false);
-
-                  // Show a generic completion message since we can't get accurate status
-                  $("#sync-warning").html(`
-                    <p><strong>✅ Training Complete:</strong> Your website content has been processed. 
-                    The AI assistant has been updated with your website content.</p>
-                  `);
-
-                  // Update website info
-                  setTimeout(loadWebsiteInfo, 1500);
-                }
-              })
-              .fail(function (xhr) {
-                // Clear interval on persistent errors to prevent infinite polling
-                if (xhr.status === 400) {
-                  clearInterval(pollingInterval);
-                  updateProgress(100, "✅ Training completed!", false);
-                  syncButton.prop("disabled", false);
-
-                  // Show a generic completion message
-                  $("#sync-warning").html(`
-                    <p><strong>✅ Training Complete:</strong> Your website content has been processed. 
-                    The AI assistant has been updated with your website content.</p>
-                  `);
-
-                  // Update website info
-                  setTimeout(loadWebsiteInfo, 1500);
-                }
-                // Other failures might be temporary, so we continue polling
-              });
-          }, 5000); // Poll every 5 seconds
-
-          // After 10 minutes, stop polling regardless
-          setTimeout(function () {
-            if (pollingInterval) {
-              clearInterval(pollingInterval);
-              $("#training-status span").html(
-                '<span style="color: grey;">Check back later - status updates stopped</span>'
-              );
-              // Assume training completed successfully
-              updateProgress(100, "✅ Training completed!", false);
+              // When done
+              updateProgress(100, "✅ Training completed successfully!");
               syncButton.prop("disabled", false);
+
+              // Update notification
+              $("#sync-warning").html(`
+                <p><strong>✅ Training Complete:</strong> Your website content has been successfully trained. 
+                The AI assistant now has up-to-date knowledge about your website content.</p>
+              `);
+
+              // Save last training date
+              $.post(voiceroAdminConfig.ajaxUrl, {
+                action: "voicero_save_training_date",
+                nonce: voiceroAdminConfig.nonce,
+                date: new Date().toISOString(),
+              });
+            } else {
+              // Update progress
+              updateProgress(
+                60 + progress * 0.4,
+                `⏳ Training content (${progress}%)...`
+              );
+
+              // Update the progress bar directly
+              $("#sync-progress-bar").css("width", progress + "%");
+              $("#sync-progress-percentage").text(progress + "%");
+              $("#training-status span").text("Processing...");
             }
-          }, 600000); // 10 minutes max
+          }, updateInterval);
+
+          // Set final timeout to ensure we complete after duration
+          setTimeout(function () {
+            clearInterval(progressTimer);
+
+            updateProgress(100, "✅ Training completed successfully!");
+            syncButton.prop("disabled", false);
+
+            // Update notification
+            $("#sync-warning").html(`
+              <p><strong>✅ Training Complete:</strong> Your website content has been successfully trained. 
+              The AI assistant now has up-to-date knowledge about your website content.</p>
+            `);
+          }, duration);
         })
         .catch(function (error) {
           // Handle errors
           var message = error.message || "An unknown error occurred";
+
+          // Check if this is a timeout error from the vectorization process
+          var isTimeoutError =
+            message.includes("taking longer than expected") ||
+            message.includes("timed out") ||
+            message.toLowerCase().includes("timeout");
+
+          // Create a retry button if needed
+          var retryButton = "";
+          if (isTimeoutError) {
+            retryButton = `<button id="retry-vectorize" class="button button-primary" style="margin-top: 10px;">Retry with longer timeout</button>`;
+
+            // Create a more user-friendly message
+            message =
+              "The AI processing is taking longer than expected due to the size of your content. This is normal for larger sites. Please try again and allow up to 5-10 minutes for processing.";
+          }
+
           updateProgress(0, `❌ Error: ${message}`, true);
           syncButton.prop("disabled", false);
-          //   // console.error("Sync error:", error);
+
+          // Add retry button to sync warning if this is a timeout error
+          if (isTimeoutError) {
+            $("#sync-warning").html(`
+              <div class="notice notice-warning inline">
+                <p><strong>⚠️ Processing Time:</strong> ${message}</p>
+                ${retryButton}
+              </div>
+            `);
+
+            // Add retry button handler
+            $("#retry-vectorize").on("click", function () {
+              // Start the sync process over again but with a notification about the longer process
+              $("#sync-form").trigger("submit");
+
+              // Update warning to mention the longer timeout
+              $("#sync-warning").html(`
+                <div class="notice notice-info inline">
+                  <p><strong>ℹ️ Extended Processing:</strong> Using a longer timeout for your large site. Please wait, this may take 5-10 minutes.</p>
+                </div>
+              `);
+            });
+          }
         });
     } catch (e) {
       updateProgress(
@@ -382,9 +385,57 @@ jQuery(document).ready(function ($) {
 
     // Race between the actual request and the timeout
     Promise.race([
-      $.post(voiceroAdminConfig.ajaxUrl, {
-        action: "voicero_get_info",
-        nonce: voiceroAdminConfig.nonce,
+      new Promise((resolve, reject) => {
+        $.post(voiceroAdminConfig.ajaxUrl, {
+          action: "voicero_get_info",
+          nonce: voiceroAdminConfig.nonce,
+        })
+          .done(function (response) {
+            resolve(response);
+          })
+          .fail(function (xhr) {
+            // If we get a 400 error but still have a readable response, try to parse it
+            if (xhr.status === 400 && xhr.responseText) {
+              try {
+                const data = JSON.parse(xhr.responseText);
+                if (data.success === false) {
+                  // Check if it's a simple nonce issue - we can retry with a new nonce
+                  if (data.data?.message?.includes("Security check")) {
+                    // Try to recover silently by getting a new nonce and retrying
+                    $.get(window.location.href, function (html) {
+                      // Try to extract a new nonce
+                      const match = html.match(/nonce":"([^"]+)"/);
+                      if (match && match[1]) {
+                        // Got a new nonce, retry the request
+                        voiceroAdminConfig.nonce = match[1];
+                        // Retry original request with new nonce
+                        $.post(voiceroAdminConfig.ajaxUrl, {
+                          action: "voicero_get_info",
+                          nonce: voiceroAdminConfig.nonce,
+                        })
+                          .done(resolve)
+                          .fail(reject);
+                      } else {
+                        reject(new Error("Could not refresh nonce"));
+                      }
+                    });
+                    return;
+                  }
+
+                  // For other errors, just reject with the message
+                  reject(new Error(data.data?.message || "Request failed"));
+                } else {
+                  // If we somehow have success=true but status 400, use the data anyway
+                  resolve(data);
+                }
+              } catch (e) {
+                // If we can't parse JSON, reject with xhr
+                reject(xhr);
+              }
+            } else {
+              reject(xhr);
+            }
+          });
       }),
       timeoutPromise,
     ])

@@ -37,6 +37,21 @@ define('VOICERO_API_URL', 'http://localhost:3000/api');
 // Define the plugin version
 define('VOICERO_VERSION', '1.0');
 
+// Load includes files early
+require_once plugin_dir_path(__FILE__) . 'includes/page-main.php';
+require_once plugin_dir_path(__FILE__) . 'includes/api.php';
+require_once plugin_dir_path(__FILE__) . 'includes/page-ai-overview.php';
+require_once plugin_dir_path(__FILE__) . 'includes/page-settings.php';
+require_once plugin_dir_path(__FILE__) . 'includes/page-contacts.php';
+require_once plugin_dir_path(__FILE__) . 'includes/page-chatbot-update.php';
+
+// Force-enable the REST API if something else is blocking it
+add_action('init', function() {
+    remove_filter('rest_authentication_errors', 'restrict_rest_api');
+    add_filter('rest_enabled', '__return_true');
+    add_filter('rest_jsonp_enabled', '__return_true');
+});
+
 // Define a debug function to log messages to the error log
 function voicero_debug_log($message, $data = null) {
     // Only log if WP_DEBUG and VOICERO_DEBUG are both enabled
@@ -266,7 +281,7 @@ function voicero_sync_content() {
                 'Accept' => 'application/json'
             ],
             'body' => json_encode($data),
-            'timeout' => 120,
+            'timeout' => 300, // Increase timeout to 5 minutes for consistency
             'sslverify' => false
         ]);
 
@@ -321,27 +336,47 @@ function voicero_vectorize_content() {
         wp_send_json_error(['message' => esc_html__('No access key found', 'voicero-ai')]);
     }
 
+    // Increase timeout substantially for large sites
     $vectorize_response = wp_remote_post(VOICERO_API_URL . '/wordpress/vectorize', [
         'headers' => [
             'Authorization' => 'Bearer ' . $access_key,
             'Content-Type' => 'application/json',
             'Accept' => 'application/json'
         ],
-        'timeout' => 120,
+        'timeout' => 300, // Increase timeout to 5 minutes
         'sslverify' => false
     ]);
 
     if (is_wp_error($vectorize_response)) {
-        wp_send_json_error([
-            'message' => sprintf(
-                /* translators: %s: detailed error message */
-                esc_html__('Vectorization failed: %s', 'voicero-ai'), 
-                esc_html($vectorize_response->get_error_message())
-            ),
-            'code' => $vectorize_response->get_error_code(),
-            'stage' => 'vectorize',
-            'progress' => 17 // Keep progress at previous step
-        ]);
+        $error_message = $vectorize_response->get_error_message();
+        $error_code = $vectorize_response->get_error_code();
+        
+        // Check if it's a timeout error
+        if (strpos($error_message, 'timed out') !== false || strpos($error_message, 'timeout') !== false) {
+            // For timeout errors, return a more helpful message
+            wp_send_json_error([
+                'message' => sprintf(
+                    /* translators: %s: detailed error message */
+                    esc_html__('The vectorization process is taking longer than expected due to the size of your content. This is normal for larger sites. Please try again and allow more time for processing.', 'voicero-ai')
+                ),
+                'code' => $error_code,
+                'stage' => 'vectorize',
+                'progress' => 17, // Keep progress at previous step
+                'retry_suggested' => true
+            ]);
+        } else {
+            // For other errors
+            wp_send_json_error([
+                'message' => sprintf(
+                    /* translators: %s: detailed error message */
+                    esc_html__('Vectorization failed: %s', 'voicero-ai'), 
+                    esc_html($error_message)
+                ),
+                'code' => $error_code,
+                'stage' => 'vectorize',
+                'progress' => 17 // Keep progress at previous step
+            ]);
+        }
     }
     
     $response_code = wp_remote_retrieve_response_code($vectorize_response);
@@ -388,7 +423,7 @@ function voicero_setup_assistant() {
             'Content-Type' => 'application/json',
             'Accept' => 'application/json'
         ],
-        'timeout' => 120,
+        'timeout' => 300, // Increase timeout to 5 minutes for consistency
         'sslverify' => false
     ]);
 
@@ -1168,20 +1203,6 @@ function voicero_render_admin_page() {
     </div>   
     <?php
 }
-
-require_once plugin_dir_path(__FILE__) . 'includes/page-main.php';
-require_once plugin_dir_path(__FILE__) . 'includes/api.php';
-require_once plugin_dir_path(__FILE__) . 'includes/page-ai-overview.php';
-require_once plugin_dir_path(__FILE__) . 'includes/page-settings.php';
-require_once plugin_dir_path(__FILE__) . 'includes/page-contacts.php';
-require_once plugin_dir_path(__FILE__) . 'includes/page-chatbot-update.php';
-
-// Force-enable the REST API if something else is blocking it
-add_action('init', function() {
-    remove_filter('rest_authentication_errors', 'restrict_rest_api');
-    add_filter('rest_enabled', '__return_true');
-    add_filter('rest_jsonp_enabled', '__return_true');
-});
 
 /**
  * Enqueue admin scripts & styles for Voicero.AI page.
@@ -2125,5 +2146,27 @@ add_action('wp_ajax_voicero_cancel_order', 'voicero_cancel_order');
 add_action('wp_ajax_nopriv_voicero_cancel_order', 'voicero_cancel_order');
 add_action('wp_ajax_voicero_verify_order', 'voicero_verify_order');
 add_action('wp_ajax_nopriv_voicero_verify_order', 'voicero_verify_order');
+
+/**
+ * AJAX handler to save training date 
+ */
+function voicero_save_training_date() {
+    // Verify nonce for security
+    if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'voicero_ajax_nonce')) {
+        wp_send_json_error(['message' => 'Security check failed']);
+        return;
+    }
+    
+    // Get date from request
+    $date = isset($_POST['date']) ? sanitize_text_field(wp_unslash($_POST['date'])) : current_time('mysql');
+    
+    // Save the date to WordPress options
+    update_option('voicero_last_training_date', $date);
+    
+    wp_send_json_success(['message' => 'Training date saved successfully']);
+}
+
+// Register AJAX handler
+add_action('wp_ajax_voicero_save_training_date', 'voicero_save_training_date');
 
 
