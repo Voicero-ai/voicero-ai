@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
 
 // Define the API base URL if not already defined
 if (!defined('VOICERO_API_URL')) {
-    define('VOICERO_API_URL', 'http://localhost:3000/api');
+    define('VOICERO_API_URL', 'https://www.voicero.ai/api');
 }
 
 /**
@@ -578,7 +578,7 @@ function voicero_tts_proxy(WP_REST_Request $request) {
 
     /* 2. Forward to Voicero API ------------------------------------------- */
     $response = wp_remote_post(
-        'http://localhost:3000/api/tts',
+        'https://www.voicero.ai/api/tts',
         [
             'headers'   => [
                 'Authorization'            => 'Bearer ' . $access_key,
@@ -708,7 +708,7 @@ function voicero_whisper_proxy($request) {
     $body .= "--$boundary--\r\n";
     
     // Send request to local API
-    $response = wp_remote_post('http://localhost:3000/api/whisper', [
+    $response = wp_remote_post('https://www.voicero.ai/api/whisper', [
         'headers' => [
             'Authorization' => 'Bearer ' . $access_key,
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
@@ -814,7 +814,7 @@ function voicero_support_proxy($request) {
     );
     
     // Forward to support API
-    $response = wp_remote_post('http://localhost:3000/api/support/help', [
+    $response = wp_remote_post('https://www.voicero.ai/api/support/help', [
         'headers' => [
             'Authorization' => 'Bearer ' . $access_key,
             'Content-Type' => 'application/json',
@@ -934,7 +934,7 @@ function voicero_contact_form_handler($request) {
     // Log the request data for debugging
     
     // Forward to Voicero API - using the correct API URL
-    $response = wp_remote_post('http://localhost:3000/api/contacts/help', [
+    $response = wp_remote_post('https://www.voicero.ai/api/contacts/help', [
         'headers' => [
             'Authorization' => 'Bearer ' . $access_key,
             'Content-Type' => 'application/json',
@@ -2127,7 +2127,7 @@ function voicero_get_ai_history_ajax() {
 
     // 7) Make the API request
     // Allow the API base URL to be configured via constant
-    $api_base = defined('VOICERO_API_URL') ? VOICERO_API_URL : 'http://localhost:3000/api';
+    $api_base = defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://www.voicero.ai/api';
     $endpoint  = trailingslashit($api_base) . 'aiHistory';
     
     try {

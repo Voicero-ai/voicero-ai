@@ -33,7 +33,7 @@ function voicero_activate_plugin() {
 }
 
 // Define the API base URL
-define('VOICERO_API_URL', 'http://localhost:3000/api');
+define('VOICERO_API_URL', 'https://www.voicero.ai/api');
 // Define the plugin version
 define('VOICERO_VERSION', '1.0');
 
@@ -705,12 +705,9 @@ function voicero_batch_train() {
             'sslverify' => false
         ];
         
-        // Fire off the request
+        // Fire off the request - don't update completed items immediately
+        // Let the status endpoint handle the actual progress tracking
         wp_remote_post($api_url, $args);
-        
-        // IMPORTANT: Update completed items directly after sending the request
-        // This bypasses the WP-Cron dependency and fixes the progress bar
-        voicero_update_training_status('completed_items', $index + 1);
         
         // We'll keep the scheduled check for good measure, but progress will update immediately
         $item_request_id = $batch_id . '_' . $index;
@@ -1125,7 +1122,7 @@ function voicero_render_admin_page() {
     
     // Generate the connection URL with nonce
     $connect_url = wp_nonce_url(
-        "http://localhost:3000/app/connect?site_url={$encoded_site_url}&redirect_url={$encoded_admin_url}",
+        "https://www.voicero.ai/app/connect?site_url={$encoded_site_url}&redirect_url={$encoded_admin_url}",
         'voicero_connect'
     );
 
@@ -1243,7 +1240,7 @@ function voicero_admin_enqueue_assets($hook_suffix) {
             'ajaxUrl'   => admin_url('admin-ajax.php'),
             'nonce'     => wp_create_nonce('voicero_ajax_nonce'),
             'accessKey' => $access_key,
-            'apiUrl'    => defined('VOICERO_API_URL') ? VOICERO_API_URL : 'http://localhost:3000/api',
+            'apiUrl'    => defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://www.voicero.ai/api',
             'websiteId' => get_option('voicero_website_id', '')
         ]
     );
@@ -1365,7 +1362,7 @@ function voicero_frontend_enqueue_assets() {
             [
                 'ajaxUrl'   => admin_url('admin-ajax.php'),
                 'nonce'     => wp_create_nonce('voicero_ajax_nonce'),
-                'apiUrl'    => defined('VOICERO_API_URL') ? VOICERO_API_URL : 'http://localhost:3000/api',
+                'apiUrl'    => defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://www.voicero.ai/api',
                 'siteUrl'   => get_site_url(),
                 'pluginUrl' => plugin_dir_url(__FILE__),
                 'websiteId' => get_option('voicero_website_id', ''),
@@ -2168,5 +2165,180 @@ function voicero_save_training_date() {
 
 // Register AJAX handler
 add_action('wp_ajax_voicero_save_training_date', 'voicero_save_training_date');
+
+// Add AJAX handler for checking training status
+add_action('wp_ajax_voicero_check_training_status', 'voicero_check_training_status_ajax');
+
+/**
+ * AJAX handler to check the status of training process
+ */
+function voicero_check_training_status_ajax() {
+    // Verify nonce for security
+    if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'voicero_ajax_nonce')) {
+        wp_send_json_error(['message' => 'Security check failed']);
+        return;
+    }
+    
+    // Get batch ID if provided
+    $batch_id = isset($_POST['batch_id']) ? sanitize_text_field(wp_unslash($_POST['batch_id'])) : '';
+    
+    // Get training status from database
+    $training_data = get_option('voicero_training_status', []);
+    
+    // If batch_id was provided, check if it matches the current batch
+    if (!empty($batch_id)) {
+        $last_request = get_option('voicero_last_training_request', []);
+        
+        if (!empty($last_request) && isset($last_request['id']) && $last_request['id'] !== $batch_id) {
+            // This is a request for an old batch, so ignore it
+            wp_send_json_error(['message' => 'Batch ID does not match current training session']);
+            return;
+        }
+    }
+    
+    // Default values if not set
+    $training_data = wp_parse_args($training_data, [
+        'in_progress' => false,
+        'status' => 'unknown',
+        'total_items' => 0,
+        'completed_items' => 0,
+        'failed_items' => 0
+    ]);
+    
+    // If training is not marked as in progress, try to check with the API
+    if (!$training_data['in_progress'] && !empty($batch_id)) {
+        $access_key = voicero_get_access_key();
+        
+        // If we have an access key, try to check with API
+        if (!empty($access_key)) {
+            $check_response = wp_remote_get(VOICERO_API_URL . '/wordpress/training-status', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $access_key,
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json'
+                ],
+                'body' => [
+                    'batch_id' => $batch_id
+                ],
+                'timeout' => 5, // Short timeout for status check
+                'sslverify' => false
+            ]);
+            
+            // If we got a successful response, update our status
+            if (!is_wp_error($check_response) && wp_remote_retrieve_response_code($check_response) === 200) {
+                $api_status = json_decode(wp_remote_retrieve_body($check_response), true);
+                
+                if ($api_status && isset($api_status['status'])) {
+                    // Update with API status
+                    if ($api_status['status'] === 'completed') {
+                        $training_data['in_progress'] = false;
+                        $training_data['status'] = 'completed';
+                        $training_data['completed_items'] = $training_data['total_items'];
+                    } else if ($api_status['status'] === 'failed') {
+                        $training_data['in_progress'] = false;
+                        $training_data['status'] = 'failed';
+                    }
+                    
+                    // Update our local tracking
+                    update_option('voicero_training_status', $training_data);
+                }
+            }
+        }
+    }
+    
+    // Return current status
+    wp_send_json_success($training_data);
+}
+
+// Register AJAX handler
+add_action('wp_ajax_voicero_save_training_date', 'voicero_save_training_date');
+
+// Add endpoint to check training status
+add_action('wp_ajax_voicero_check_batch_training_status', 'voicero_check_batch_training_status');
+add_action('wp_ajax_nopriv_voicero_check_batch_training_status', 'voicero_check_batch_training_status');
+
+/**
+ * AJAX handler to check the status of a batch of training items
+ */
+function voicero_check_batch_training_status() {
+    // Verify nonce for security
+    if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'voicero_ajax_nonce')) {
+        wp_send_json_error(['message' => 'Security check failed']);
+        return;
+    }
+    
+    // Get required parameters
+    $website_id = isset($_POST['websiteId']) ? sanitize_text_field(wp_unslash($_POST['websiteId'])) : '';
+    $batch_data = isset($_POST['batchData']) ? sanitize_text_field(wp_unslash($_POST['batchData'])) : '';
+    
+    if (empty($website_id)) {
+        wp_send_json_error(['message' => 'Missing required websiteId parameter']);
+        return;
+    }
+    
+    // Get access key
+    $access_key = voicero_get_access_key();
+    if (empty($access_key)) {
+        wp_send_json_error(['message' => 'No access key found']);
+        return;
+    }
+    
+    // Make API call to check status
+    $response = wp_remote_get(
+        VOICERO_API_URL . '/wordpress/train/status',
+        [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $access_key,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json'
+            ],
+            'body' => [
+                'websiteId' => $website_id,
+                'batchData' => $batch_data
+            ],
+            'timeout' => 10,
+            'sslverify' => false
+        ]
+    );
+    
+    if (is_wp_error($response)) {
+        wp_send_json_error([
+            'message' => 'Failed to check training status: ' . $response->get_error_message(),
+            'status' => 'error'
+        ]);
+        return;
+    }
+    
+    $response_code = wp_remote_retrieve_response_code($response);
+    $response_body = wp_remote_retrieve_body($response);
+    
+    if ($response_code !== 200 && $response_code !== 202) {
+        wp_send_json_error([
+            'message' => 'Failed to check training status. Server returned ' . $response_code,
+            'status' => 'error',
+            'body' => $response_body
+        ]);
+        return;
+    }
+    
+    $data = json_decode($response_body, true);
+    
+    if (!$data) {
+        wp_send_json_error([
+            'message' => 'Invalid response from server',
+            'status' => 'error'
+        ]);
+        return;
+    }
+    
+    // Return the status information
+    wp_send_json_success([
+        'status' => isset($data['status']) ? $data['status'] : 'unknown',
+        'message' => isset($data['message']) ? $data['message'] : '',
+        'pendingCount' => isset($data['pendingCount']) ? $data['pendingCount'] : 0,
+        'inProgressCount' => isset($data['inProgressCount']) ? $data['inProgressCount'] : 0,
+        'data' => $data
+    ]);
+}
 
 

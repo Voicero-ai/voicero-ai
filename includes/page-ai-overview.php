@@ -103,7 +103,7 @@ function voicero_render_ai_overview_page() {
             // Log the request data for debugging
             
             // Use the configured API base URL for flexibility
-            $api_base = defined('VOICERO_API_URL') ? VOICERO_API_URL : 'http://localhost:3000/api';
+            $api_base = defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://www.voicero.ai/api';
             $endpoint  = trailingslashit($api_base) . 'aiHistory';
             $response = wp_remote_post($endpoint, [
                 'headers' => [

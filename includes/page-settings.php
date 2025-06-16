@@ -30,7 +30,7 @@ function voicero_register_settings_scripts($hook) {
         'ajaxUrl' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('voicero_ajax_nonce'),
         'websiteId' => get_option('voicero_website_id', ''),
-        'apiUrl' => defined('VOICERO_API_URL') ? VOICERO_API_URL : 'http://localhost:3000/api',
+        'apiUrl' => defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://www.voicero.ai/api',
         'accessKey' => get_option('voicero_access_key', '')
     ));
 }
@@ -444,7 +444,7 @@ function voicero_render_settings_page() {
                 <div class="voicero-subscription-actions" id="subscription-button-container">
                     <a href="<?php 
                         $website_id = get_option('voicero_website_id', ''); 
-                        echo esc_url('http://localhost:3000/app/websites/website?id=' . $website_id);
+                        echo esc_url('https://www.voicero.ai/app/websites/website?id=' . $website_id);
                     ?>" class="button button-primary" target="_blank">
                         <?php esc_html_e('Update Subscription', 'voicero-ai'); ?>
                     </a>

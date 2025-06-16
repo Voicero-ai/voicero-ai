@@ -751,7 +751,7 @@
     var apiUrl =
       typeof voiceroConfig !== "undefined" && voiceroConfig.apiUrl
         ? voiceroConfig.apiUrl
-        : "http://localhost:3000/api";
+        : "https://www.voicero.ai/api";
 
     // Get access key from config
     var accessKey =
@@ -913,7 +913,7 @@
     if (websiteId) {
       // Set the subscription URL
       var subscriptionUrl =
-        "http://localhost:3000/app/websites/website?id=" + websiteId;
+        "https://www.voicero.ai/app/websites/website?id=" + websiteId;
       $("#update-subscription-link").attr("href", subscriptionUrl);
     }
   }
@@ -1012,8 +1012,8 @@
 
       // ALWAYS create the button, even without websiteId
       var subscriptionUrl = websiteId
-        ? "http://localhost:3000/app/websites/website?id=" + websiteId
-        : "http://localhost:3000/app/websites";
+        ? "https://www.voicero.ai/app/websites/website?id=" + websiteId
+        : "https://www.voicero.ai/app/websites";
 
       var button = $("<a></a>")
         .attr("href", subscriptionUrl)

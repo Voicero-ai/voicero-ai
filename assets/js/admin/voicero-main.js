@@ -204,8 +204,8 @@ jQuery(document).ready(function ($) {
               : [];
 
           // Calculate total items including general training which we'll do last
-          var totalItems = pages.length + posts.length + products.length + 1; // +1 for general training
-          updateProgress(50, `⏳ Preparing to train ${totalItems} items...`);
+          var allItemsCount = pages.length + posts.length + products.length + 1; // +1 for general training
+          updateProgress(50, `⏳ Preparing to train ${allItemsCount} items...`);
 
           // Build combined array of all items to train
           var allItems = [
@@ -215,92 +215,175 @@ jQuery(document).ready(function ($) {
             { type: "general" }, // Add general training as the last item
           ];
 
-          // Process all items in a single batch request
-          return $.post(voiceroAdminConfig.ajaxUrl, {
-            action: "voicero_batch_train",
-            nonce: voiceroAdminConfig.nonce,
-            websiteId: websiteId,
-            batch_data: JSON.stringify(allItems),
-          });
-        })
-        .then(function (response) {
-          if (!response.success)
-            throw new Error(response.data.message || "Batch training failed");
-          // Training requests have been initiated
-          updateProgress(60, "⏳ Training requests initiated. Processing...");
+          // Process in batches of 12 items
+          const BATCH_SIZE = 12;
+          const totalItems = allItems.length;
+          const totalBatches = Math.ceil(totalItems / BATCH_SIZE);
+          let currentBatch = 0;
+          let processedItems = 0;
 
-          // Show explanation about background processing
-          $("#sync-warning").html(`
-                    <p><strong>ℹ️ Training In Progress:</strong> All training requests have been initiated and 
-                    are now processing. This can take several minutes to complete depending on the 
-                    size of your website.</p>
-                    <div id="training-status-container">
-                        <p id="training-status">Status: <span>Processing...</span></p>
-                    </div>
-                `);
+          function processBatch() {
+            currentBatch++;
+            const startIndex = (currentBatch - 1) * BATCH_SIZE;
+            const endIndex = Math.min(startIndex + BATCH_SIZE, totalItems);
+            const batchItems = allItems.slice(startIndex, endIndex);
+            const batchSize = batchItems.length;
 
-          // Use a simple timer-based approach instead of polling
-          let startTime = Date.now();
-          let duration = 30000; // 30 seconds for training
-          let progressUpdates = 10; // Number of progress updates to show
-          let updateInterval = duration / progressUpdates;
+            // Calculate progress: 50% (setup) + up to 50% for batch processing
+            const progress = 50 + ((currentBatch - 1) / totalBatches) * 50;
 
-          let progress = 0;
+            updateProgress(
+              progress,
+              `⏳ Processing batch ${currentBatch}/${totalBatches} (${processedItems}/${totalItems} items)...`
+            );
 
-          // Update progress bar every few seconds
-          let progressTimer = setInterval(function () {
-            progress += 10;
-            if (progress >= 100) {
-              progress = 100;
-              clearInterval(progressTimer);
+            // Show current status
+            $("#sync-warning").html(`
+              <p><strong>ℹ️ Training In Progress:</strong> Processing batch ${currentBatch} of ${totalBatches}.</p>
+              <div id="training-status-container">
+                <p id="training-status">Status: <span>Processing ${processedItems}/${totalItems} items complete</span></p>
+              </div>
+            `);
 
-              // When done
-              updateProgress(100, "✅ Training completed successfully!");
-              syncButton.prop("disabled", false);
+            // Process this batch
+            return $.post(voiceroAdminConfig.ajaxUrl, {
+              action: "voicero_batch_train",
+              nonce: voiceroAdminConfig.nonce,
+              websiteId: websiteId,
+              batch_data: JSON.stringify(batchItems),
+            }).then(function (response) {
+              if (!response.success)
+                throw new Error(
+                  response.data.message || "Batch training failed"
+                );
 
-              // Update notification
-              $("#sync-warning").html(`
+              // Now check the actual training status and wait until it's complete
+              return waitForBatchCompletion(
+                websiteId,
+                JSON.stringify(batchItems),
+                batchSize
+              ).then(function () {
+                // If there are more batches to process
+                if (currentBatch < totalBatches) {
+                  // Process the next batch
+                  return processBatch();
+                }
+
+                // All batches complete, return final result
+                return {
+                  success: true,
+                  message: "All batches processed successfully",
+                };
+              });
+            });
+          }
+
+          // Function to poll and wait for batch completion
+          function waitForBatchCompletion(websiteId, batchData, batchSize) {
+            return new Promise((resolve, reject) => {
+              const maxAttempts = 30; // Maximum number of attempts (5 minutes with 10-second interval)
+              let attempts = 0;
+
+              function checkStatus() {
+                $.post(voiceroAdminConfig.ajaxUrl, {
+                  action: "voicero_check_batch_training_status",
+                  nonce: voiceroAdminConfig.nonce,
+                  websiteId: websiteId,
+                  batchData: batchData,
+                })
+                  .done(function (response) {
+                    if (response.success) {
+                      const status = response.data.status;
+
+                      // Update status message
+                      $("#training-status span").text(
+                        response.data.message ||
+                          `Processing batch ${currentBatch}/${totalBatches}`
+                      );
+
+                      if (status === "complete") {
+                        // This batch is complete, update processed items
+                        processedItems += batchSize;
+
+                        // Resolve the promise to continue with the next batch
+                        resolve(response);
+                      } else if (status === "in_progress") {
+                        // Still in progress, continue polling if under max attempts
+                        if (++attempts < maxAttempts) {
+                          setTimeout(checkStatus, 10000); // Check every 10 seconds
+                        } else {
+                          // Max attempts reached, assume it's taking too long but let it continue
+                          console.warn(
+                            "Max attempts reached waiting for batch completion"
+                          );
+                          processedItems += batchSize; // Optimistically count these as done
+                          resolve({
+                            success: true,
+                            message:
+                              "Batch processing timeout - continuing with next batch",
+                          });
+                        }
+                      } else {
+                        // Unknown status, but continue with the process
+                        console.warn("Unknown batch status:", status);
+                        processedItems += batchSize;
+                        resolve(response);
+                      }
+                    } else {
+                      // Error checking status, but continue with the process
+                      console.error("Error checking batch status:", response);
+                      processedItems += batchSize;
+                      resolve({
+                        success: true,
+                        message:
+                          "Error checking batch status - continuing with next batch",
+                      });
+                    }
+                  })
+                  .fail(function (error) {
+                    console.error("Failed to check batch status:", error);
+
+                    // Even on failure, continue the process
+                    processedItems += batchSize;
+                    resolve({
+                      success: true,
+                      message:
+                        "Failed to check batch status - continuing with next batch",
+                    });
+                  });
+              }
+
+              // Start checking status after a short delay to allow processing to begin
+              setTimeout(checkStatus, 5000);
+            });
+          }
+
+          // Start processing the first batch
+          return processBatch().then(function () {
+            // All batches have been processed
+            updateProgress(
+              100,
+              "✅ Training completed successfully! Please refresh the page to see the changes."
+            );
+            syncButton.prop("disabled", false);
+
+            $("#sync-warning").html(`
                 <p><strong>✅ Training Complete:</strong> Your website content has been successfully trained. 
                 The AI assistant now has up-to-date knowledge about your website content.</p>
               `);
 
-              // Save last training date
-              $.post(voiceroAdminConfig.ajaxUrl, {
-                action: "voicero_save_training_date",
-                nonce: voiceroAdminConfig.nonce,
-                date: new Date().toISOString(),
-              });
-            } else {
-              // Update progress
-              updateProgress(
-                60 + progress * 0.4,
-                `⏳ Training content (${progress}%)...`
-              );
-
-              // Update the progress bar directly
-              $("#sync-progress-bar").css("width", progress + "%");
-              $("#sync-progress-percentage").text(progress + "%");
-              $("#training-status span").text("Processing...");
-            }
-          }, updateInterval);
-
-          // Set final timeout to ensure we complete after duration
-          setTimeout(function () {
-            clearInterval(progressTimer);
-
-            updateProgress(100, "✅ Training completed successfully!");
-            syncButton.prop("disabled", false);
-
-            // Update notification
-            $("#sync-warning").html(`
-              <p><strong>✅ Training Complete:</strong> Your website content has been successfully trained. 
-              The AI assistant now has up-to-date knowledge about your website content.</p>
-            `);
-          }, duration);
+            // Save last training date
+            $.post(voiceroAdminConfig.ajaxUrl, {
+              action: "voicero_save_training_date",
+              nonce: voiceroAdminConfig.nonce,
+              date: new Date().toISOString(),
+            });
+          });
         })
         .catch(function (error) {
           // Handle errors
           var message = error.message || "An unknown error occurred";
+          console.log("Error during sync process:", error);
 
           // Check if this is a timeout error from the vectorization process
           var isTimeoutError =
@@ -495,7 +578,7 @@ jQuery(document).ready(function ($) {
             <p class="description">Manage your AI-powered shopping assistant</p>
             
             <div style="text-align: right; margin: 15px 0;">
-              <a href="http://localhost:3000/app/websites/website?id=${
+              <a href="https://www.voicero.ai/app/websites/website?id=${
                 data.id || ""
               }" target="_blank" class="button button-primary open-control-panel">
                 <span class="dashicons dashicons-external" style="margin-right: 5px;"></span>
@@ -522,7 +605,7 @@ jQuery(document).ready(function ($) {
             : ""
         }
                   </div>
-                  <a href="http://localhost:3000/app/contacts" class="button button-secondary">
+                  <a href="https://www.voicero.ai/app/contacts" class="button button-secondary">
                     <span class="dashicons dashicons-visibility" style="margin-right: 5px;"></span>
                     View Contacts
                   </a>
