@@ -215,8 +215,8 @@ jQuery(document).ready(function ($) {
             { type: "general" }, // Add general training as the last item
           ];
 
-          // Process in batches of 12 items
-          const BATCH_SIZE = 12;
+          // Process in batches of 10 items
+          const BATCH_SIZE = 10;
           const totalItems = allItems.length;
           const totalBatches = Math.ceil(totalItems / BATCH_SIZE);
           let currentBatch = 0;
@@ -245,7 +245,7 @@ jQuery(document).ready(function ($) {
               </div>
             `);
 
-            // Process this batch
+            // Process this batch of 10 items
             return $.post(voiceroAdminConfig.ajaxUrl, {
               action: "voicero_batch_train",
               nonce: voiceroAdminConfig.nonce,
