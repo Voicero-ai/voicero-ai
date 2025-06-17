@@ -1,4 +1,4 @@
-=== Voicero.AI ===
+=== Voicero AI ===
 Contributors: voiceroai
 Tags: ai, chatbot, assistant, ecommerce, conversion
 Requires at least: 6.0

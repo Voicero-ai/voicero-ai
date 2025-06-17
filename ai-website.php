@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: Voicero.AI
+ * Plugin Name: Voicero https://www.voicero.aiAI
  * Description: Connect your site to an AI Salesman. It answers questions, guides users, and boosts sales.
  * Version: 1.0
  * Author: Voicero.AI
@@ -2340,5 +2340,230 @@ function voicero_check_batch_training_status() {
         'data' => $data
     ]);
 }
+
+/**
+ * AJAX handler to initiate a return request for a WooCommerce order
+ */
+function voicero_initiate_return() {
+    // Verify nonce for security
+    if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'voicero_ajax_nonce')) {
+        wp_send_json_error(['message' => 'Security check failed']);
+        return;
+    }
+    
+    // Check if WooCommerce is active
+    if (!class_exists('WooCommerce')) {
+        wp_send_json_error(['message' => 'WooCommerce is not active']);
+        return;
+    }
+    
+    // Get required parameters
+    $order_id = isset($_POST['order_id']) ? sanitize_text_field(wp_unslash($_POST['order_id'])) : '';
+    $email = isset($_POST['email']) ? sanitize_email(wp_unslash($_POST['email'])) : '';
+    $reason = isset($_POST['reason']) ? sanitize_text_field(wp_unslash($_POST['reason'])) : 'Customer requested return';
+    $items = isset($_POST['items']) ? json_decode(sanitize_text_field(wp_unslash($_POST['items'])), true) : [];
+    $return_type = isset($_POST['return_type']) ? sanitize_text_field(wp_unslash($_POST['return_type'])) : 'refund'; // refund or exchange
+    
+    if (empty($order_id)) {
+        wp_send_json_error(['message' => 'Order ID is required']);
+        return;
+    }
+    
+    if (empty($email)) {
+        wp_send_json_error(['message' => 'Email is required']);
+        return;
+    }
+    
+    // Try to get the order
+    $order = wc_get_order($order_id);
+    if (!$order) {
+        // Try to find by looking up using get_posts which is properly cached
+        $args = array(
+            'post_type' => 'shop_order',
+            'post_status' => 'any',
+            'posts_per_page' => 1,
+            's' => $order_id, // Search by order number in post title
+        );
+        $order_posts = get_posts($args);
+        
+        if (!empty($order_posts)) {
+            $order = wc_get_order($order_posts[0]->ID);
+        }
+    }
+    
+    if (!$order) {
+        wp_send_json_error(['message' => 'Order not found']);
+        return;
+    }
+    
+    // Verify order belongs to customer
+    $billing_email = $order->get_billing_email();
+    if ($billing_email !== $email) {
+        wp_send_json_error(['message' => 'Email does not match order']);
+        return;
+    }
+    
+    // Check if order status allows returns
+    $status = $order->get_status();
+    $returnable_statuses = apply_filters('voicero_returnable_order_statuses', [
+        'completed', 'processing', 'on-hold'
+    ]);
+    
+    if (!in_array($status, $returnable_statuses)) {
+        wp_send_json_error([
+            'message' => 'This order is not eligible for return due to its current status: ' . wc_get_order_status_name($status)
+        ]);
+        return;
+    }
+    
+    // Check if the order is within the return period (e.g., 30 days)
+    $order_date = $order->get_date_created();
+    $days_since_order = (time() - $order_date->getTimestamp()) / (60 * 60 * 24);
+    $return_period = apply_filters('voicero_return_period_days', 30);
+    
+    if ($days_since_order > $return_period) {
+        wp_send_json_error([
+            'message' => sprintf(
+                /* translators: %d: number of days in return period */
+                __('This order is outside the %d-day return period', 'voicero-ai'),
+                $return_period
+            )
+        ]);
+        return;
+    }
+    
+    // Process the return request
+    try {
+        // Create a log of items to be returned
+        $return_items_log = [];
+        $order_items = $order->get_items();
+        
+        // If specific items were provided, validate them
+        if (!empty($items) && is_array($items)) {
+            foreach ($items as $item_id => $item_data) {
+                // Check if item exists in the order
+                $item_exists = false;
+                foreach ($order_items as $order_item_id => $order_item) {
+                    if ($order_item_id == $item_id || (isset($item_data['product_id']) && $order_item->get_product_id() == $item_data['product_id'])) {
+                        $item_exists = true;
+                        
+                        // Record details for the return
+                        $return_items_log[] = [
+                            'item_id' => $order_item_id,
+                            'product_id' => $order_item->get_product_id(),
+                            'product_name' => $order_item->get_name(),
+                            'quantity' => isset($item_data['quantity']) ? intval($item_data['quantity']) : $order_item->get_quantity(),
+                            'reason' => isset($item_data['reason']) ? sanitize_text_field($item_data['reason']) : $reason
+                        ];
+                        break;
+                    }
+                }
+                
+                if (!$item_exists) {
+                    wp_send_json_error(['message' => 'One or more items do not exist in the order']);
+                    return;
+                }
+            }
+        } else {
+            // If no specific items provided, assume all items in the order
+            foreach ($order_items as $item_id => $item) {
+                $return_items_log[] = [
+                    'item_id' => $item_id,
+                    'product_id' => $item->get_product_id(),
+                    'product_name' => $item->get_name(),
+                    'quantity' => $item->get_quantity(),
+                    'reason' => $reason
+                ];
+            }
+        }
+        
+        // Store return request details as order meta
+        $return_request_id = 'return_' . uniqid();
+        $return_data = [
+            'id' => $return_request_id,
+            'date_requested' => current_time('mysql'),
+            'status' => 'pending', // pending, approved, rejected, completed
+            'type' => $return_type,
+            'reason' => $reason,
+            'items' => $return_items_log
+        ];
+        
+        // Save return request to order meta
+        $existing_returns = $order->get_meta('_voicero_return_requests', true);
+        if (empty($existing_returns) || !is_array($existing_returns)) {
+            $existing_returns = [];
+        }
+        $existing_returns[] = $return_data;
+        $order->update_meta_data('_voicero_return_requests', $existing_returns);
+        
+        // Add return request note to the order
+        $note = sprintf(
+            /* translators: 1: return type (refund/exchange), 2: reason */
+            __('Return request (%1$s) initiated by customer via AI assistant. Reason: %2$s', 'voicero-ai'),
+            $return_type,
+            $reason
+        );
+        
+        // Add details about items requested for return
+        $note .= "\n\n" . __('Items requested for return:', 'voicero-ai') . "\n";
+        foreach ($return_items_log as $item) {
+            $note .= sprintf(
+                '- %s (x%d): %s',
+                $item['product_name'],
+                $item['quantity'],
+                isset($item['reason']) ? $item['reason'] : $reason
+            ) . "\n";
+        }
+        
+        // Add customer-visible note
+        $order->add_order_note($note, true); // true = visible to customer
+        
+        // Add admin note with more details
+        $admin_note = sprintf(
+            /* translators: 1: return request ID, 2: return type */
+            __('Return request #%1$s (%2$s) needs review. Please process this return request.', 'voicero-ai'),
+            $return_request_id,
+            $return_type
+        );
+        $order->add_order_note($admin_note, false); // false = not visible to customer
+        
+        // Save the order
+        $order->save();
+        
+        // Optional: Send email notification to store admin
+        $admin_email = get_option('admin_email');
+        if (!empty($admin_email)) {
+            $subject = sprintf(
+                /* translators: %s: order number */
+                __('Return Request for Order #%s', 'voicero-ai'),
+                $order->get_order_number()
+            );
+            
+            $message = sprintf(
+                /* translators: 1: order number, 2: return type, 3: reason */
+                __('A new return request has been initiated for Order #%1$s.\n\nType: %2$s\nReason: %3$s\n\nPlease login to your admin dashboard to review this request.', 'voicero-ai'),
+                $order->get_order_number(),
+                $return_type,
+                $reason
+            );
+            
+            wp_mail($admin_email, $subject, $message);
+        }
+        
+        // Return success response
+        wp_send_json_success([
+            'message' => __('Return request initiated successfully', 'voicero-ai'),
+            'return_id' => $return_request_id,
+            'order_id' => $order->get_id(),
+            'status' => 'pending'
+        ]);
+    } catch (Exception $e) {
+        wp_send_json_error(['message' => 'Error initiating return: ' . $e->getMessage()]);
+    }
+}
+
+// Register the return request AJAX handler
+add_action('wp_ajax_voicero_initiate_return', 'voicero_initiate_return');
+add_action('wp_ajax_nopriv_voicero_initiate_return', 'voicero_initiate_return');
 
 
