@@ -101,14 +101,17 @@
       this.appState.hasShownTextWelcome = false;
       this.appState.hasShownHelpBubble = false; // Track if help bubble has been shown
 
+      // Set default clickMessage value (will be overridden if API provides one)
+      this.clickMessage = "Need Help Shopping?";
+
       // Set initializing flag to prevent button flickering during startup
       this.isInitializing = true;
 
       // Create global property to track button visibility timeouts
       this.buttonVisibilityTimeouts = [];
 
-      // Track website active status - default to false until verified by API
-      this.isWebsiteActive = false;
+      // Track website active status - Default to true until explicitly told otherwise by the API
+      this.isWebsiteActive = true;
 
       // Make sure apiConnected is false by default until we get a successful API response
       this.apiConnected = false;
@@ -155,6 +158,17 @@
 
     // Create the main interface with the two option buttons
     createButton: function () {
+      // Don't create button if website is not active
+      if (!this.isWebsiteActive) {
+        console.log(
+          "Website is not active (isWebsiteActive=false), skipping button creation"
+        );
+        this.hideMainButton();
+        return;
+      }
+
+      console.log("Website is active (isWebsiteActive=true), creating button");
+
       // DON'T SKIP BUTTON CREATION - Even if API isn't connected, we need the main button
       // Just log a warning instead of completely skipping
       if (!this.apiConnected) {
@@ -330,7 +344,7 @@
             "beforeend",
             `<div id="voicero-help-bubble">
               <button id="voicero-help-close">×</button>
-              Need Help Shopping?
+              ${this.clickMessage || "Need Help Shopping?"}
             </div>`
           );
 
@@ -489,7 +503,7 @@
             });
           }
 
-          // Set a timeout to show the help bubble after 4 seconds if core button is visible
+          // Set a timeout to show the help bubble after 2 seconds (reduced from 4) if core button is visible
           this.helpBubbleTimeout = setTimeout(() => {
             if (
               window.VoiceroCore &&
@@ -506,7 +520,37 @@
                 window.VoiceroCore.appState.hasShownHelpBubble = true;
               }
             }
-          }, 4000);
+          }, 2000); // Reduced from 4000ms to 2000ms
+
+          // Add additional retry to make sure the bubble shows up
+          this.helpBubbleRetryTimeout = setTimeout(() => {
+            if (
+              window.VoiceroCore &&
+              !window.VoiceroCore.appState.hasShownHelpBubble &&
+              window.VoiceroCore.session
+            ) {
+              var helpBubble = document.getElementById("voicero-help-bubble");
+              if (helpBubble) {
+                helpBubble.style.display = "block";
+                window.VoiceroCore.appState.hasShownHelpBubble = true;
+              }
+            }
+          }, 5000);
+
+          // Add a fallback timeout with fewer conditions
+          this.helpBubbleFallbackTimeout = setTimeout(() => {
+            // Only check if bubble has been shown already
+            if (
+              window.VoiceroCore &&
+              !window.VoiceroCore.appState.hasShownHelpBubble
+            ) {
+              var helpBubble = document.getElementById("voicero-help-bubble");
+              if (helpBubble) {
+                helpBubble.style.display = "block";
+                window.VoiceroCore.appState.hasShownHelpBubble = true;
+              }
+            }
+          }, 8000);
 
           if (mainButton && chooser) {
             mainButton.addEventListener("click", function (e) {
@@ -822,7 +866,33 @@
             // Store the working API URL
             this.apiBaseUrl = baseUrl;
             this.apiConnected = true;
-            this.isWebsiteActive = data.websiteFound;
+
+            // Add debug logging to see exact API response for website active status
+            console.log("API response websiteFound:", data.websiteFound);
+            console.log("API response website object:", data.website);
+
+            // Check both websiteFound and website.active properties
+            // We need to check explicitly for false values in both fields
+            const isExplicitlyInactive =
+              data.websiteFound === false || data.website?.active === false;
+
+            if (isExplicitlyInactive) {
+              console.log(
+                "Website is explicitly marked inactive (websiteFound=false or website.active=false), hiding Voicero UI"
+              );
+              this.isWebsiteActive = false;
+              // Hide any existing buttons/UI
+              this.hideMainButton();
+              this.removeAllButtons();
+              return;
+            } else {
+              // Any other case (true, undefined, etc.) we assume active
+              console.log(
+                "Website is active (no explicit inactive flags found)"
+              );
+              this.isWebsiteActive = true;
+            }
+
             this.websiteId = data.website?.id;
 
             // Set website color if provided by API
@@ -830,6 +900,15 @@
               this.websiteColor = data.website.color;
               // Update theme colors immediately
               this.updateThemeColor(this.websiteColor);
+            }
+
+            // Store clickMessage from API if provided
+            if (data.website?.clickMessage) {
+              this.clickMessage = data.website.clickMessage;
+              window.voiceroClickMessage = data.website.clickMessage;
+            } else {
+              this.clickMessage = "Need Help Shopping?";
+              window.voiceroClickMessage = "Need Help Shopping?";
             }
 
             // Save ALL icon settings from API
@@ -1651,6 +1730,12 @@
 
     // Ensure the main button is always visible
     ensureMainButtonVisible: function () {
+      // Don't show button if website is not active
+      if (!this.isWebsiteActive) {
+        this.hideMainButton();
+        return;
+      }
+
       // Don't show button if we're currently restoring an interface that should have it hidden
       if (this.isRestoringInterface || this.isInitializing) {
         return;
@@ -2150,6 +2235,10 @@
     setupButtonFailsafe: function () {
       // Only set up failsafe if website is active
       if (!this.isWebsiteActive) {
+        console.log("Website is not active, skipping button failsafe setup");
+        // Hide any existing buttons
+        this.hideMainButton();
+        this.removeAllButtons();
         return;
       }
 
@@ -2163,6 +2252,9 @@
         // Check if site is active before creating button
         if (this.isWebsiteActive) {
           setTimeout(() => this.createFailsafeButton(), 500);
+        } else {
+          this.hideMainButton();
+          this.removeAllButtons();
         }
       });
 
@@ -2170,6 +2262,12 @@
       document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible" && this.isWebsiteActive) {
           setTimeout(() => this.createFailsafeButton(), 300);
+        } else if (
+          document.visibilityState === "visible" &&
+          !this.isWebsiteActive
+        ) {
+          this.hideMainButton();
+          this.removeAllButtons();
         }
       });
     },
@@ -2180,6 +2278,7 @@
       if (!this.isWebsiteActive) {
         // Actually hide the button if it exists and site is inactive
         this.hideMainButton();
+        this.removeAllButtons();
         return;
       }
 

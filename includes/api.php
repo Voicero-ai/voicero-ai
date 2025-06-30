@@ -4115,6 +4115,10 @@ function voicero_save_chatbot_settings_proxy() {
                     (isset($settings['botName']) ? sanitize_text_field($settings['botName']) : ''),
         'customWelcomeMessage' => isset($settings['welcome_message']) ? sanitize_textarea_field($settings['welcome_message']) : 
                                  (isset($settings['customWelcomeMessage']) ? sanitize_textarea_field($settings['customWelcomeMessage']) : ''),
+        'clickMessage' => isset($settings['click_message']) ? sanitize_textarea_field($settings['click_message']) : 
+                         (isset($settings['clickMessage']) ? sanitize_textarea_field($settings['clickMessage']) : ''),
+        'allowMultiAIReview' => isset($settings['allow_multi_ai_review']) ? (bool)$settings['allow_multi_ai_review'] : 
+                               (isset($settings['allowMultiAIReview']) ? (bool)$settings['allowMultiAIReview'] : false),
         'customInstructions' => isset($settings['custom_instructions']) ? sanitize_textarea_field($settings['custom_instructions']) : 
                                (isset($settings['customInstructions']) ? sanitize_textarea_field($settings['customInstructions']) : ''),
         'color' => isset($settings['primary_color']) ? sanitize_text_field($settings['primary_color']) : 

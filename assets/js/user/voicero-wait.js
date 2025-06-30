@@ -109,7 +109,7 @@ var VoiceroWait = {
 
     // Log debug info
     if (this.debug) {
-      console.log("Typing indicator shown");
+      ("Typing indicator shown");
     }
 
     return indicatorWrapper;
@@ -148,7 +148,7 @@ var VoiceroWait = {
       });
 
     if (this.debug) {
-      console.log("Typing indicator hidden");
+      ("Typing indicator hidden");
     }
   },
 

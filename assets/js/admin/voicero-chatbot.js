@@ -241,6 +241,17 @@
       $("#welcome-message").trigger("input");
     }
 
+    // Set click message
+    if (data.clickMessage) {
+      $("#click-message").val(data.clickMessage);
+      $("#click-message").trigger("input");
+    }
+
+    // Set allow multi AI review
+    if (data.allowMultiAIReview !== undefined) {
+      $("#allow-multi-ai-review").prop("checked", data.allowMultiAIReview);
+    }
+
     // Set custom instructions
     if (data.customInstructions) {
       $("#custom-instructions").val(data.customInstructions);
@@ -339,6 +350,13 @@
     $("#welcome-message")
       .on("input", function () {
         updateWordCount($(this), $("#welcome-message-count"), 25);
+      })
+      .trigger("input");
+
+    // Click message word counter
+    $("#click-message")
+      .on("input", function () {
+        updateWordCount($(this), $("#click-message-count"), 25);
       })
       .trigger("input");
 
@@ -825,6 +843,8 @@
       websiteId: $("#website-id").val(),
       chatbot_name: $("#chatbot-name").val(),
       welcome_message: $("#welcome-message").val(),
+      click_message: $("#click-message").val(),
+      allow_multi_ai_review: $("#allow-multi-ai-review").is(":checked") ? 1 : 0,
       custom_instructions: $("#custom-instructions").val(),
       primary_color: $("#primary-color").val(),
       remove_highlighting: $("#remove-highlighting").is(":checked") ? 1 : 0,
@@ -867,6 +887,9 @@
           if (websiteData) {
             websiteData.botName = formData.chatbot_name;
             websiteData.customWelcomeMessage = formData.welcome_message;
+            websiteData.clickMessage = formData.click_message;
+            websiteData.allowMultiAIReview =
+              formData.allow_multi_ai_review === 1;
             websiteData.customInstructions = formData.custom_instructions;
             websiteData.color = formData.primary_color;
             websiteData.removeHighlight = formData.remove_highlighting === 1;
@@ -931,6 +954,12 @@
     var welcomeMessage = $("#welcome-message").val().trim();
     if (welcomeMessage && welcomeMessage.split(/\s+/).length > 25) {
       showErrorMessage("Welcome Message exceeds the 25 word limit.");
+      return false;
+    }
+
+    var clickMessage = $("#click-message").val().trim();
+    if (clickMessage && clickMessage.split(/\s+/).length > 25) {
+      showErrorMessage("Click Message exceeds the 25 word limit.");
       return false;
     }
 

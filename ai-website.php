@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name: Voicero https://www.voicero.aiAI
+ * Plugin Name: Voicero AI
  * Description: Connect your site to an AI Salesman. It answers questions, guides users, and boosts sales.
- * Version: 1.0
+ * Version: 1.0.2
  * Author: Voicero.AI
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html

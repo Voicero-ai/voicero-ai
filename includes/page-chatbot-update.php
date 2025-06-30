@@ -89,6 +89,8 @@ function voicero_render_chatbot_update_page() {
     // Set defaults and then override with API data if available
     $chatbot_name = !empty($website_data['botName']) ? $website_data['botName'] : '';
     $welcome_message = !empty($website_data['customWelcomeMessage']) ? $website_data['customWelcomeMessage'] : '';
+    $click_message = !empty($website_data['clickMessage']) ? $website_data['clickMessage'] : '';
+    $allow_multi_ai_review = isset($website_data['allowMultiAIReview']) ? (bool)$website_data['allowMultiAIReview'] : false;
     $custom_instructions = !empty($website_data['customInstructions']) ? $website_data['customInstructions'] : '';
     $primary_color = !empty($website_data['color']) ? $website_data['color'] : '#6366F1'; // Default to indigo
     $remove_highlighting = isset($website_data['removeHighlight']) ? (bool)$website_data['removeHighlight'] : false;
@@ -226,6 +228,21 @@ function voicero_render_chatbot_update_page() {
                         <textarea id="welcome-message" name="welcome_message" rows="3"><?php echo esc_textarea($welcome_message); ?></textarea>
                         <p class="field-description"><?php esc_html_e( 'First message shown when a customer opens the chat (max 25 words)', 'voicero-ai' ); ?></p>
                         <div class="word-count" id="welcome-message-count">0/25 words</div>
+                    </div>
+                    
+                    <div class="form-field">
+                        <label for="click-message"><?php esc_html_e( 'Click Message', 'voicero-ai' ); ?></label>
+                        <textarea id="click-message" name="click_message" rows="2"><?php echo esc_textarea($click_message); ?></textarea>
+                        <p class="field-description"><?php esc_html_e( 'Mini bubble message that entices the user to click the chatbot (max 25 words)', 'voicero-ai' ); ?></p>
+                        <div class="word-count" id="click-message-count">0/25 words</div>
+                    </div>
+                    
+                    <div class="form-field checkbox-field">
+                        <label>
+                            <input type="checkbox" id="allow-multi-ai-review" name="allow_multi_ai_review" value="1" <?php checked($allow_multi_ai_review, true); ?>>
+                            <?php esc_html_e( 'Allow Multi AI Review', 'voicero-ai' ); ?>
+                        </label>
+                        <p class="field-description"><?php esc_html_e( 'When enabled, allows unlimited AI overview resets', 'voicero-ai' ); ?></p>
                     </div>
                     
                     <div class="form-field">
@@ -484,6 +501,8 @@ add_action('wp_ajax_voicero_save_chatbot_settings', function() {
         'websiteId' => isset($settings['websiteId']) ? sanitize_text_field($settings['websiteId']) : '',
         'botName' => isset($settings['chatbot_name']) ? sanitize_text_field($settings['chatbot_name']) : '',
         'customWelcomeMessage' => isset($settings['welcome_message']) ? sanitize_textarea_field($settings['welcome_message']) : '',
+        'clickMessage' => isset($settings['click_message']) ? sanitize_textarea_field($settings['click_message']) : '',
+        'allowMultiAIReview' => isset($settings['allow_multi_ai_review']) ? (bool) $settings['allow_multi_ai_review'] : false,
         'customInstructions' => isset($settings['custom_instructions']) ? sanitize_textarea_field($settings['custom_instructions']) : '',
         'color' => isset($settings['primary_color']) ? sanitize_text_field($settings['primary_color']) : '',
         'removeHighlight' => isset($settings['remove_highlighting']) ? (bool) $settings['remove_highlighting'] : false,
@@ -500,6 +519,8 @@ add_action('wp_ajax_voicero_save_chatbot_settings', function() {
     // Store settings in WordPress for fallback
     update_option('voicero_chatbot_name', $api_data['botName']);
     update_option('voicero_welcome_message', $api_data['customWelcomeMessage']);
+    update_option('voicero_click_message', $api_data['clickMessage']);
+    update_option('voicero_allow_multi_ai_review', $api_data['allowMultiAIReview']);
     update_option('voicero_custom_instructions', $api_data['customInstructions']);
     update_option('voicero_primary_color', $api_data['color']);
     update_option('voicero_remove_highlighting', $api_data['removeHighlight']);

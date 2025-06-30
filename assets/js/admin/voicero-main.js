@@ -216,21 +216,21 @@ jQuery(document).ready(function ($) {
           ];
 
           // Process in batches of 10 items
-          const BATCH_SIZE = 10;
-          const totalItems = allItems.length;
-          const totalBatches = Math.ceil(totalItems / BATCH_SIZE);
+          var BATCH_SIZE = 10;
+          var totalItems = allItems.length;
+          var totalBatches = Math.ceil(totalItems / BATCH_SIZE);
           let currentBatch = 0;
           let processedItems = 0;
 
           function processBatch() {
             currentBatch++;
-            const startIndex = (currentBatch - 1) * BATCH_SIZE;
-            const endIndex = Math.min(startIndex + BATCH_SIZE, totalItems);
-            const batchItems = allItems.slice(startIndex, endIndex);
-            const batchSize = batchItems.length;
+            var startIndex = (currentBatch - 1) * BATCH_SIZE;
+            var endIndex = Math.min(startIndex + BATCH_SIZE, totalItems);
+            var batchItems = allItems.slice(startIndex, endIndex);
+            var batchSize = batchItems.length;
 
             // Calculate progress: 50% (setup) + up to 50% for batch processing
-            const progress = 50 + ((currentBatch - 1) / totalBatches) * 50;
+            var progress = 50 + ((currentBatch - 1) / totalBatches) * 50;
 
             updateProgress(
               progress,
@@ -281,7 +281,7 @@ jQuery(document).ready(function ($) {
           // Function to poll and wait for batch completion
           function waitForBatchCompletion(websiteId, batchData, batchSize) {
             return new Promise((resolve, reject) => {
-              const maxAttempts = 30; // Maximum number of attempts (5 minutes with 10-second interval)
+              var maxAttempts = 30; // Maximum number of attempts (5 minutes with 10-second interval)
               let attempts = 0;
 
               function checkStatus() {
@@ -293,7 +293,7 @@ jQuery(document).ready(function ($) {
                 })
                   .done(function (response) {
                     if (response.success) {
-                      const status = response.data.status;
+                      var status = response.data.status;
 
                       // Update status message
                       $("#training-status span").text(
@@ -383,7 +383,7 @@ jQuery(document).ready(function ($) {
         .catch(function (error) {
           // Handle errors
           var message = error.message || "An unknown error occurred";
-          console.log("Error during sync process:", error);
+          "Error during sync process:", error;
 
           // Check if this is a timeout error from the vectorization process
           var isTimeoutError =
@@ -480,14 +480,14 @@ jQuery(document).ready(function ($) {
             // If we get a 400 error but still have a readable response, try to parse it
             if (xhr.status === 400 && xhr.responseText) {
               try {
-                const data = JSON.parse(xhr.responseText);
+                var data = JSON.parse(xhr.responseText);
                 if (data.success === false) {
                   // Check if it's a simple nonce issue - we can retry with a new nonce
                   if (data.data?.message?.includes("Security check")) {
                     // Try to recover silently by getting a new nonce and retrying
                     $.get(window.location.href, function (html) {
                       // Try to extract a new nonce
-                      const match = html.match(/nonce":"([^"]+)"/);
+                      var match = html.match(/nonce":"([^"]+)"/);
                       if (match && match[1]) {
                         // Got a new nonce, retry the request
                         voiceroAdminConfig.nonce = match[1];

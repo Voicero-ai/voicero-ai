@@ -52,7 +52,7 @@ var VoiceroSupport = {
    */
   setupTextChatObserver: function () {
     if (this.debugMode) {
-      console.log("Setting up text chat observer");
+      ("Setting up text chat observer");
     }
     // Function to find and observe the chat messages container
     var setupObserver = () => {
@@ -62,7 +62,7 @@ var VoiceroSupport = {
       );
       if (!textChatContainer || !textChatContainer.shadowRoot) {
         if (this.debugMode) {
-          console.log("Text chat container not found or no shadow root");
+          ("Text chat container not found or no shadow root");
         }
         return false;
       }
@@ -72,13 +72,13 @@ var VoiceroSupport = {
         textChatContainer.shadowRoot.getElementById("chat-messages");
       if (!messagesContainer) {
         if (this.debugMode) {
-          console.log("Chat messages container not found in shadow DOM");
+          ("Chat messages container not found in shadow DOM");
         }
         return false;
       }
 
       if (this.debugMode) {
-        console.log("Found text chat messages container, setting up observer");
+        ("Found text chat messages container, setting up observer");
       }
       // Create mutation observer
       var observer = new MutationObserver((mutations) => {
@@ -106,7 +106,7 @@ var VoiceroSupport = {
       // Start observing
       observer.observe(messagesContainer, { childList: true, subtree: false });
       if (this.debugMode) {
-        console.log("Text chat observer started");
+        ("Text chat observer started");
       }
       return true;
     };
@@ -125,9 +125,6 @@ var VoiceroSupport = {
           var backoffTime = Math.min(1000 * Math.pow(1.5, retryCount), 10000); // Exponential backoff with 10s max
 
           if (this.debugMode) {
-            console.log(
-              "Retrying text chat observer setup in " + backoffTime + "ms"
-            );
           }
           setTimeout(() => {
             if (!setupObserver()) {
@@ -136,7 +133,7 @@ var VoiceroSupport = {
           }, backoffTime);
         } else {
           if (this.debugMode) {
-            console.log("Max retries reached for text chat observer setup");
+            ("Max retries reached for text chat observer setup");
           }
         }
       };
@@ -150,7 +147,7 @@ var VoiceroSupport = {
    */
   setupVoiceChatObserver: function () {
     if (this.debugMode) {
-      console.log("Setting up voice chat observer");
+      ("Setting up voice chat observer");
     }
     // Function to find and observe the voice chat messages container
     var setupObserver = () => {
@@ -158,7 +155,7 @@ var VoiceroSupport = {
       var voiceChatContainer = document.getElementById("voice-chat-interface");
       if (!voiceChatContainer) {
         if (this.debugMode) {
-          console.log("Voice chat container not found");
+          ("Voice chat container not found");
         }
         return false;
       }
@@ -168,13 +165,13 @@ var VoiceroSupport = {
         voiceChatContainer.querySelector("#voice-messages");
       if (!messagesContainer) {
         if (this.debugMode) {
-          console.log("Voice messages container not found");
+          ("Voice messages container not found");
         }
         return false;
       }
 
       if (this.debugMode) {
-        console.log("Found voice chat messages container, setting up observer");
+        ("Found voice chat messages container, setting up observer");
       }
       // Create mutation observer
       var observer = new MutationObserver((mutations) => {
@@ -202,7 +199,7 @@ var VoiceroSupport = {
       // Start observing
       observer.observe(messagesContainer, { childList: true, subtree: false });
       if (this.debugMode) {
-        console.log("Voice chat observer started");
+        ("Voice chat observer started");
       }
       return true;
     };
@@ -221,9 +218,6 @@ var VoiceroSupport = {
           var backoffTime = Math.min(1000 * Math.pow(1.5, retryCount), 10000); // Exponential backoff with 10s max
 
           if (this.debugMode) {
-            console.log(
-              "Retrying voice chat observer setup in " + backoffTime + "ms"
-            );
           }
           setTimeout(() => {
             if (!setupObserver()) {
@@ -232,7 +226,7 @@ var VoiceroSupport = {
           }, backoffTime);
         } else {
           if (this.debugMode) {
-            console.log("Max retries reached for voice chat observer setup");
+            ("Max retries reached for voice chat observer setup");
           }
         }
       };
@@ -246,7 +240,7 @@ var VoiceroSupport = {
    */
   processExistingMessages: function () {
     if (this.debugMode) {
-      console.log("Processing existing messages");
+      ("Processing existing messages");
     }
     try {
       // Process text chat messages
@@ -256,7 +250,7 @@ var VoiceroSupport = {
 
       if (textChatContainer && textChatContainer.shadowRoot) {
         if (this.debugMode) {
-          console.log("Found text chat container with shadow root");
+          ("Found text chat container with shadow root");
         }
         // Try to get all AI messages from shadow DOM
         var aiMessages = textChatContainer.shadowRoot.querySelectorAll(
@@ -264,9 +258,6 @@ var VoiceroSupport = {
         );
 
         if (this.debugMode) {
-          console.log(
-            "Found " + aiMessages.length + " existing AI messages in text chat"
-          );
         }
         // Process each message
         aiMessages.forEach((message) => {
@@ -276,7 +267,7 @@ var VoiceroSupport = {
         });
       } else {
         if (this.debugMode) {
-          console.log("Text chat container or shadow root not found");
+          ("Text chat container or shadow root not found");
         }
       }
 
@@ -284,7 +275,7 @@ var VoiceroSupport = {
       var voiceChatContainer = document.getElementById("voice-chat-interface");
       if (voiceChatContainer) {
         if (this.debugMode) {
-          console.log("Found voice chat container");
+          ("Found voice chat container");
         }
         // Get all AI messages
         var aiMessages = voiceChatContainer.querySelectorAll(
@@ -292,9 +283,6 @@ var VoiceroSupport = {
         );
 
         if (this.debugMode) {
-          console.log(
-            "Found " + aiMessages.length + " existing AI messages in voice chat"
-          );
         }
         // Process each message
         aiMessages.forEach((message) => {
@@ -304,7 +292,7 @@ var VoiceroSupport = {
         });
       } else {
         if (this.debugMode) {
-          console.log("Voice chat container not found");
+          ("Voice chat container not found");
         }
       }
     } catch (error) {
@@ -468,7 +456,7 @@ var VoiceroSupport = {
       window.VoiceroCore.session.threads
     ) {
       if (this.debugMode) {
-        console.log("Found VoiceroCore session and threads");
+        ("Found VoiceroCore session and threads");
       }
       // Find the active thread first
       var activeThread = null;
@@ -640,7 +628,7 @@ var VoiceroSupport = {
     }
 
     if (this.debugMode) {
-      console.log("Found valid thread and message ID");
+      ("Found valid thread and message ID");
     }
 
     // Make API request to the WordPress endpoint with the actual UUIDs

@@ -18,8 +18,8 @@
       refreshData();
     });
 
-    // Set up view more links for recent queries
-    $(".view-more-link").on("click", function (e) {
+    // Set up view more links for recent queries (using event delegation for dynamically added elements)
+    $(document).on("click", ".view-more-link", function (e) {
       e.preventDefault();
       var $queryItem = $(this).closest(".query-item");
       viewConversationDetails($queryItem);
@@ -197,8 +197,16 @@
       success: function (response) {
         hideLoadingIndicator();
 
+        // Log the full response data
+        "AI History API Response:", response;
+
         if (response.success) {
           // Display the AI history data
+          "AI History Data:", response.data;
+
+          // Store the data globally so we can access it when viewing conversation details
+          window.latestAIHistoryData = response.data;
+
           displayAIHistory(response.data);
         } else {
           var errorMessage =
@@ -374,9 +382,12 @@
       // Parse markdown in query text
       var parsedQueryText = parseMarkdown(queryText);
 
+      // Use either threadId or id, whichever is available
+      var threadIdentifier = thread.threadId || thread.id || "";
+
       // Create the query item
       var $queryItem = $(`
-        <div class="query-item" data-thread-id="${thread.threadId || ""}">
+        <div class="query-item" data-thread-id="${threadIdentifier}">
             <div class="query-content">
                 <div class="query-text">${parsedQueryText}</div>
                 <div class="query-time">${timestamp}</div>
@@ -387,6 +398,9 @@
             </div>
         </div>
       `);
+
+      // Store the thread data as a data attribute for easy access
+      $queryItem.data("thread-data", thread);
 
       // Add to container
       $container.append($queryItem);
@@ -469,16 +483,89 @@
    * @param {Object} $queryItem - The query item jQuery object
    */
   function viewConversationDetails($queryItem) {
-    var queryText = $queryItem.find(".query-text").text();
-    var timestamp = $queryItem.find(".query-time").text();
+    var threadId = $queryItem.data("thread-id");
 
-    // In a real implementation, you would likely open a modal with conversation details
-    // For now, we'll just navigate to a hypothetical conversation details page
-    window.location.href =
-      "admin.php?page=voicero-ai-conversations&query=" +
-      encodeURIComponent(queryText) +
-      "&time=" +
-      encodeURIComponent(timestamp);
+    // If conversation details already exist, toggle it
+    if ($queryItem.next(".conversation-details").length) {
+      $queryItem.next(".conversation-details").slideToggle();
+      return;
+    }
+
+    // Log the thread ID we're looking for to help debug
+    "Looking for thread with ID:", threadId;
+
+    // Find the thread data in the latest response
+    var thread = null;
+
+    // First try to get it from the stored thread data in the element
+    thread = $queryItem.data("thread-data");
+
+    // If that didn't work, try to find it in the global data
+    if (
+      !thread &&
+      window.latestAIHistoryData &&
+      window.latestAIHistoryData.threads
+    ) {
+      // Log available thread IDs to help debug
+
+      thread = window.latestAIHistoryData.threads.find(
+        (t) => t.threadId === threadId || t.id === threadId
+      );
+    }
+
+    if (!thread || !thread.messages || thread.messages.length === 0) {
+      // If we can't find thread data, show an error
+      console.error("Could not find thread with ID:", threadId);
+      alert("Conversation details not available");
+      return;
+    }
+
+    "Found thread:", thread;
+
+    // Create conversation details element
+    var $details = $('<div class="conversation-details"></div>');
+
+    // Add each message to the conversation
+    thread.messages.forEach(function (message) {
+      var isUser = message.role === "user";
+      var content = message.content || "";
+
+      // Clean up AI response if it's in JSON format
+      if (!isUser && content.startsWith("{") && content.endsWith("}")) {
+        try {
+          var jsonData = JSON.parse(content);
+          if (jsonData.answer) {
+            content = jsonData.answer;
+          }
+        } catch (e) {
+          // Keep original content if parsing fails
+        }
+      }
+
+      // Create message bubble
+      var $message = $(
+        '<div class="message-container ' +
+          (isUser ? "user-message" : "assistant-message") +
+          '">' +
+          '<div class="message-bubble">' +
+          '<div class="message-role">' +
+          (isUser ? "User" : "Assistant") +
+          "</div>" +
+          '<div class="message-content">' +
+          parseMarkdown(content) +
+          "</div>" +
+          '<div class="message-time">' +
+          new Date(message.createdAt).toLocaleTimeString() +
+          "</div>" +
+          "</div>" +
+          "</div>"
+      );
+
+      $details.append($message);
+    });
+
+    // Insert conversation details after the query item
+    $details.insertAfter($queryItem).hide().slideDown();
   }
 
   /**
@@ -785,10 +872,79 @@
                     font-size: 12px;
                     color: #2271b1;
                     text-decoration: none;
+                    cursor: pointer;
                 }
                 
                 .view-all-container {
                     text-align: center;
+                }
+                
+                /* Conversation Details Styles */
+                .conversation-details {
+                    background: #f9f9f9;
+                    border-radius: 4px;
+                    margin: 10px 0 15px;
+                    padding: 15px;
+                    border: 1px solid #eee;
+                    max-height: 400px;
+                    overflow-y: auto;
+                }
+                
+                .message-container {
+                    margin-bottom: 12px;
+                    display: flex;
+                }
+                
+                .user-message {
+                    justify-content: flex-end;
+                }
+                
+                .assistant-message {
+                    justify-content: flex-start;
+                }
+                
+                .message-bubble {
+                    border-radius: 10px;
+                    padding: 10px 12px;
+                    max-width: 85%;
+                    position: relative;
+                }
+                
+                .user-message .message-bubble {
+                    background: #e6f2ff;
+                    border: 1px solid #cce5ff;
+                }
+                
+                .assistant-message .message-bubble {
+                    background: #f0f0f0;
+                    border: 1px solid #e0e0e0;
+                }
+                
+                .message-role {
+                    font-weight: 600;
+                    font-size: 12px;
+                    margin-bottom: 5px;
+                    color: #666;
+                }
+                
+                .message-content {
+                    font-size: 14px;
+                    line-height: 1.5;
+                }
+                
+                .message-content p:first-child {
+                    margin-top: 0;
+                }
+                
+                .message-content p:last-child {
+                    margin-bottom: 0;
+                }
+                
+                .message-time {
+                    font-size: 10px;
+                    color: #999;
+                    margin-top: 5px;
+                    text-align: right;
                 }
                 
                 /* Website Overview */

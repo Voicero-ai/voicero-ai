@@ -6,7 +6,7 @@
 var VoiceroReturnHandler = {
   init: function () {
     // Initialize return handler
-    console.log("VoiceroReturnHandler initialized");
+    ("VoiceroReturnHandler initialized");
     return this;
   },
 
@@ -16,14 +16,14 @@ var VoiceroReturnHandler = {
    */
   handleReturn: function (context) {
     // Normalize context to handle different field names
-    const normalizedContext = { ...context };
+    var normalizedContext = { ...context };
 
     // Handle order_number vs order_id
     if (!normalizedContext.order_id && normalizedContext.order_number) {
       normalizedContext.order_id = normalizedContext.order_number;
     }
 
-    const {
+    var {
       order_id,
       email,
       reason,
@@ -97,7 +97,7 @@ var VoiceroReturnHandler = {
    */
   handleRefund: function (context) {
     // Normalize context to handle different field names
-    const normalizedContext = { ...context };
+    var normalizedContext = { ...context };
 
     // Handle order_number vs order_id
     if (!normalizedContext.order_id && normalizedContext.order_number) {
@@ -105,7 +105,7 @@ var VoiceroReturnHandler = {
     }
 
     // Check if we have the minimum required information
-    const { order_id, email } = normalizedContext || {};
+    var { order_id, email } = normalizedContext || {};
 
     if (!order_id || !email) {
       // Ask for the information we need
@@ -130,7 +130,7 @@ var VoiceroReturnHandler = {
     }
 
     // Add refund type to context
-    const updatedContext = {
+    var updatedContext = {
       ...normalizedContext,
       return_type: "refund",
     };
@@ -143,7 +143,7 @@ var VoiceroReturnHandler = {
    */
   handleExchange: function (context) {
     // Normalize context to handle different field names
-    const normalizedContext = { ...context };
+    var normalizedContext = { ...context };
 
     // Handle order_number vs order_id
     if (!normalizedContext.order_id && normalizedContext.order_number) {
@@ -151,7 +151,7 @@ var VoiceroReturnHandler = {
     }
 
     // Check if we have the minimum required information
-    const { order_id, email } = normalizedContext || {};
+    var { order_id, email } = normalizedContext || {};
 
     if (!order_id || !email) {
       // Ask for the information we need
@@ -177,7 +177,7 @@ var VoiceroReturnHandler = {
     }
 
     // Add exchange type to context
-    const updatedContext = {
+    var updatedContext = {
       ...normalizedContext,
       return_type: "exchange",
     };
@@ -190,14 +190,14 @@ var VoiceroReturnHandler = {
    */
   handleCancelOrder: function (context) {
     // Normalize context to handle different field names
-    const normalizedContext = { ...context };
+    var normalizedContext = { ...context };
 
     // Handle order_number vs order_id
     if (!normalizedContext.order_id && normalizedContext.order_number) {
       normalizedContext.order_id = normalizedContext.order_number;
     }
 
-    const { order_id, email, reason } = normalizedContext || {};
+    var { order_id, email, reason } = normalizedContext || {};
 
     if (!order_id || !email) {
       // Ask for the information we need
@@ -238,18 +238,18 @@ var VoiceroReturnHandler = {
    */
   initiateReturn: function (data) {
     // Get AJAX configuration from voiceroConfig
-    const ajaxUrl =
+    var ajaxUrl =
       window.voiceroConfig && window.voiceroConfig.ajaxUrl
         ? window.voiceroConfig.ajaxUrl
         : "/wp-admin/admin-ajax.php";
 
-    const nonce =
+    var nonce =
       window.voiceroConfig && window.voiceroConfig.nonce
         ? window.voiceroConfig.nonce
         : "";
 
     // Prepare form data
-    const formData = new FormData();
+    var formData = new FormData();
     formData.append("action", "voicero_initiate_return");
     formData.append("nonce", nonce);
     formData.append("order_id", data.order_id);
@@ -302,18 +302,18 @@ Status: ${result.data.status}
    */
   cancelOrder: function (data) {
     // Get AJAX configuration from voiceroConfig
-    const ajaxUrl =
+    var ajaxUrl =
       window.voiceroConfig && window.voiceroConfig.ajaxUrl
         ? window.voiceroConfig.ajaxUrl
         : "/wp-admin/admin-ajax.php";
 
-    const nonce =
+    var nonce =
       window.voiceroConfig && window.voiceroConfig.nonce
         ? window.voiceroConfig.nonce
         : "";
 
     // Prepare form data
-    const formData = new FormData();
+    var formData = new FormData();
     formData.append("action", "voicero_cancel_order");
     formData.append("nonce", nonce);
     formData.append("order_id", data.order_id);
@@ -393,18 +393,18 @@ ${data.restock ? "The items have been returned to inventory." : ""}
   verifyOrder: function (data) {
     return new Promise((resolve, reject) => {
       // Get AJAX configuration from voiceroConfig
-      const ajaxUrl =
+      var ajaxUrl =
         window.voiceroConfig && window.voiceroConfig.ajaxUrl
           ? window.voiceroConfig.ajaxUrl
           : "/wp-admin/admin-ajax.php";
 
-      const nonce =
+      var nonce =
         window.voiceroConfig && window.voiceroConfig.nonce
           ? window.voiceroConfig.nonce
           : "";
 
       // Prepare form data
-      const formData = new FormData();
+      var formData = new FormData();
       formData.append("action", "voicero_verify_order");
       formData.append("nonce", nonce);
       formData.append("order_id", data.order_id);
