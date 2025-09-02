@@ -57,80 +57,47 @@ function voicero_get_access_key() {
 
 // Add this to make the access key and API URL available to frontend scripts
 function voicero_enqueue_scripts() {
-    // Only enqueue on the frontend, not in admin
+    // Load external Voicero widget script on frontend
     if (!is_admin()) {
-        // Get all JS files from the assets/js directory
-        $js_dir = plugin_dir_path(__FILE__) . '../assets/js/';
-        $js_files = glob($js_dir . '*.js');
+        // Get access key securely
+        $access_key = voicero_get_access_key();
         
-        // Sort files to ensure core files load first
-        usort($js_files, function($a, $b) {
-            // Make sure core.js loads first
-            if (strpos($a, 'voicero-core.js') !== false) return -1;
-            if (strpos($b, 'voicero-core.js') !== false) return 1;
-            return strcmp($a, $b);
-        });
-        
-        $loaded_handles = array();
-        
-        // Track dependencies
-        $core_handle = '';
-        
-        // Load each file except admin.js
-        foreach ($js_files as $js_file) {
-            $file_name = basename($js_file);
-            
-            // Skip admin.js
-            if ($file_name === 'admin.js') {
-                continue;
-            }
-            
-            // Create handle from filename
-            $handle = str_replace('.js', '', $file_name) . '-js';
-            
-            // Determine dependencies
-            $deps = ['jquery'];
-            
-            // Add core as dependency for most files
-            if (strpos($file_name, 'voicero-core.js') !== false) {
-                $core_handle = $handle;
-            } elseif (!empty($core_handle)) {
-                $deps[] = $core_handle;
-            }
-            
-            // Special case for text dependency
-            if (strpos($file_name, 'voicero-contact.js') !== false && in_array('voicero-text-js', $loaded_handles)) {
-                $deps[] = 'voicero-text-js';
-            }
-            
-            // Enqueue the script
-            wp_enqueue_script(
-                $handle,
-                plugin_dir_url(__FILE__) . '../assets/js/' . $file_name,
-                $deps,
-                '1.1',
-                true
+        // Only load widget if we have an access key
+        if (!empty($access_key)) {
+            // Register the script first so we can add attributes
+            wp_register_script(
+                'voicero-widget',
+                'https://voicero-text-frontend.vercel.app/widget.js',
+                array(),
+                null,
+                true // Load in footer (similar to afterInteractive)
             );
             
-            $loaded_handles[] = $handle;
+            // Add data-token attribute and other attributes using WordPress filter
+            add_filter('script_loader_tag', function($tag, $handle, $src) use ($access_key) {
+                if ($handle === 'voicero-widget') {
+                    // Add data-token attribute and async loading for better performance
+                    return str_replace(
+                        '<script',
+                        '<script data-token="' . esc_attr($access_key) . '" async',
+                        $tag
+                    );
+                }
+                return $tag;
+            }, 10, 3);
+            
+            // Enqueue the script
+            wp_enqueue_script('voicero-widget');
+            
+            voicero_debug_log('Voicero widget script enqueued with token', [
+                'has_token' => !empty($access_key),
+                'token_length' => strlen($access_key),
+                'widget_url' => 'https://voicero-text-frontend.vercel.app/widget.js'
+            ]);
+        } else {
+            voicero_debug_log('No access key found, Voicero widget not loaded');
         }
-
-        // Get access key
-        $access_key = voicero_get_access_key();
-
-        // Pass data to the frontend script
-        wp_localize_script('voicero-core-js', 'voiceroConfig', [
-            // Removed accessKey for security - now using server-side proxy
-            'apiUrl' => VOICERO_API_URL,
-            'ajaxUrl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('voicero_frontend_nonce'),
-            'pluginUrl' => plugin_dir_url(__FILE__) . '../',
-            'debug' => defined('WP_DEBUG') && WP_DEBUG ? true : false,
-        ]);
-
-        // For backwards compatibility
-        wp_add_inline_script('voicero-core-js', 'window.voiceroConfig = window.voiceroConfig;', 'before');
-
+        
         // Enqueue the stylesheets
         wp_enqueue_style(
             'dashicons'
@@ -145,8 +112,6 @@ function voicero_enqueue_scripts() {
         
         // Add custom inline CSS for the chat interface
         wp_add_inline_style('ai-website-style', voicero_get_custom_css());
-        
-        voicero_debug_log('Voicero AI scripts enqueued successfully');
     }
 }
 add_action('wp_enqueue_scripts', 'voicero_enqueue_scripts');

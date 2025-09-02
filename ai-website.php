@@ -33,7 +33,7 @@ function voicero_activate_plugin() {
 }
 
 // Define the API base URL
-define('VOICERO_API_URL', 'https://www.voicero.ai/api');
+define('VOICERO_API_URL', 'https://56b2c4656c5a.ngrok-free.app/api');
 // Define the plugin version
 define('VOICERO_VERSION', '1.0');
 
@@ -42,8 +42,9 @@ require_once plugin_dir_path(__FILE__) . 'includes/page-main.php';
 require_once plugin_dir_path(__FILE__) . 'includes/api.php';
 require_once plugin_dir_path(__FILE__) . 'includes/page-ai-overview.php';
 require_once plugin_dir_path(__FILE__) . 'includes/page-settings.php';
-require_once plugin_dir_path(__FILE__) . 'includes/page-contacts.php';
 require_once plugin_dir_path(__FILE__) . 'includes/page-chatbot-update.php';
+require_once plugin_dir_path(__FILE__) . 'includes/page-news.php';
+require_once plugin_dir_path(__FILE__) . 'includes/page-help.php';
 
 // Force-enable the REST API if something else is blocking it
 add_action('init', function() {
@@ -113,28 +114,8 @@ function voicero_debug_info() {
     // Check if scripts are properly registered
     global $wp_scripts;
     
-    // Get all expected script handles from the JS directory
-    $js_dir = plugin_dir_path(__FILE__) . 'assets/js/user/';
-    $js_files = glob($js_dir . '*.js');
-    $expected_handles = array();
-    
-    foreach ($js_files as $js_file) {
-        $file_name = basename($js_file);
-        if ($file_name !== 'admin.js') { // Skip admin.js
-            $handle = str_replace('.js', '', $file_name) . '-js';
-            $expected_handles[] = $handle;
-        }
-    }
-    
-    // Always check core script
-    if (!in_array('voicero-core-js', $expected_handles)) {
-        $expected_handles[] = 'voicero-core-js';
-    }
-    
-    // Check if each expected script is registered
-    foreach ($expected_handles as $handle) {
-        $response['script_handles'][$handle] = isset($wp_scripts->registered[$handle]);
-    }
+    // User scripts have been removed - no longer checking them
+    $response['script_handles'] = array('status' => 'user_scripts_removed');
     
     wp_send_json_success($response);
 }
@@ -155,52 +136,59 @@ function voicero_admin_page() {
         30                                             // Menu position
     );
 
-    // Add submenu pages
-    add_submenu_page(
-        'voicero-ai-admin',                           // Parent slug
-        esc_html__('Overview', 'voicero-ai'),         // Page title
-        esc_html__('Overview', 'voicero-ai'),         // Menu title
-        'manage_options',                             // Capability
-        'voicero-ai-admin',                           // Menu slug (same as parent for first item)
-        'voicero_render_admin_page'                   // Callback function
-    );
-
-    add_submenu_page(
-        'voicero-ai-admin',                           // Parent slug
-        esc_html__('Settings', 'voicero-ai'),      // Page title
-        esc_html__('Settings', 'voicero-ai'),      // Menu title
-        'manage_options',                             // Capability
-        'voicero-ai-settings',                        // Menu slug
-        'voicero_render_settings_page'                // Callback function
-    );
-
-    add_submenu_page(
-        'voicero-ai-admin',                           // Parent slug
-        esc_html__('Contacts', 'voicero-ai'),         // Page title
-        esc_html__('Contacts', 'voicero-ai'),         // Menu title
-        'manage_options',                             // Capability
-        'voicero-ai-contacts',                        // Menu slug
-        'voicero_render_contacts_page'                // Callback function
-    );
-
-    add_submenu_page(
-        'voicero-ai-admin',                           // Parent slug
-        esc_html__('Chatbot Update', 'voicero-ai'),   // Page title
-        esc_html__('Chatbot Update', 'voicero-ai'),   // Menu title
-        'manage_options',                             // Capability
-        'voicero-ai-chatbot-update',                  // Menu slug
-        'voicero_render_chatbot_update_page'          // Callback function
-    );
-
+    // Add submenu pages in the correct order:
+    // 1. AI Overview (at the top)
     add_submenu_page(
         'voicero-ai-admin',                           // Parent slug
         esc_html__('AI Overview', 'voicero-ai'),      // Page title
         esc_html__('AI Overview', 'voicero-ai'),      // Menu title
         'manage_options',                             // Capability
+        'voicero-ai-admin',                           // Menu slug (same as parent for first item)
+        'voicero_render_admin_page'                   // Callback function
+    );
+
+    // 2. Customize Chatbot (renamed from Chatbot Update)
+    add_submenu_page(
+        'voicero-ai-admin',                           // Parent slug
+        esc_html__('Customize Chatbot', 'voicero-ai'), // Page title
+        esc_html__('Customize Chatbot', 'voicero-ai'), // Menu title
+        'manage_options',                             // Capability
+        'voicero-ai-chatbot-update',                  // Menu slug
+        'voicero_render_chatbot_update_page'          // Callback function
+    );
+
+    // 3. Help Interface (renamed from AI Overview)
+    add_submenu_page(
+        'voicero-ai-admin',                           // Parent slug
+        esc_html__('Help Interface', 'voicero-ai'),   // Page title
+        esc_html__('Help Interface', 'voicero-ai'),   // Menu title
+        'manage_options',                             // Capability
         'voicero-ai-overview',                        // Menu slug
-        'voicero_render_ai_overview_page'             // Callback function
+        'voicero_render_help_page_content'            // Callback function
+    );
+
+    // 4. News Interface (placeholder - you can implement this later)
+    add_submenu_page(
+        'voicero-ai-admin',                           // Parent slug
+        esc_html__('News Interface', 'voicero-ai'),   // Page title
+        esc_html__('News Interface', 'voicero-ai'),   // Menu title
+        'manage_options',                             // Capability
+        'voicero-ai-news',                            // Menu slug
+        'voicero_render_news_page'                    // Callback function
+    );
+
+    // 5. Settings (at the bottom)
+    add_submenu_page(
+        'voicero-ai-admin',                           // Parent slug
+        esc_html__('Settings', 'voicero-ai'),         // Page title
+        esc_html__('Settings', 'voicero-ai'),         // Menu title
+        'manage_options',                             // Capability
+        'voicero-ai-settings',                        // Menu slug
+        'voicero_render_settings_page'                // Callback function
     );
 }
+
+// News Interface page is now handled in includes/page-news.php
 
 // Add AJAX handlers for the admin page
 add_action('wp_ajax_voicero_check_connection', 'voicero_check_connection');
@@ -208,6 +196,82 @@ add_action('wp_ajax_voicero_sync_content', 'voicero_sync_content');
 add_action('wp_ajax_voicero_vectorize_content', 'voicero_vectorize_content');
 add_action('wp_ajax_voicero_setup_assistant', 'voicero_setup_assistant');
 add_action('wp_ajax_voicero_clear_connection', 'voicero_clear_connection');
+
+
+/**
+ * AJAX handler to clear the Voicero connection
+ */
+function voicero_clear_connection() {
+    // Verify nonce for security
+    if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'voicero_ajax_nonce')) {
+        wp_send_json_error(['message' => esc_html__('Security check failed', 'voicero-ai')]);
+        return;
+    }
+
+    // Check user permissions
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => esc_html__('You do not have permission to perform this action.', 'voicero-ai')]);
+        return;
+    }
+
+    try {
+        // Clear all Voicero-related options
+        $options_to_clear = [
+            'voicero_access_key',
+            'voicero_website_id',
+            'voicero_website_name',
+            'voicero_website_url',
+            'voicero_custom_instructions',
+            'voicero_user_name',
+            'voicero_username',
+            'voicero_email',
+            'voicero_training_status',
+            'voicero_last_training_date',
+            'voicero_last_training_request',
+            'voicero_chatbot_settings',
+            'voicero_chatbot_name',
+            'voicero_welcome_message',
+            'voicero_click_message',
+            'voicero_allow_multi_ai_review',
+            'voicero_primary_color',
+            'voicero_text_color',
+            'voicero_button_position',
+            'voicero_remove_highlighting',
+            'voicero_bot_icon_type',
+            'voicero_voice_icon_type',
+            'voicero_message_icon_type',
+            'voicero_suggested_questions',
+            'voicero_last_synced',
+            'voicero_ai_features'
+        ];
+
+        // Delete each option
+        foreach ($options_to_clear as $option) {
+            delete_option($option);
+        }
+
+        voicero_debug_log('Voicero connection cleared successfully', [
+            'options_cleared' => count($options_to_clear),
+            'user' => wp_get_current_user()->user_login
+        ]);
+
+        wp_send_json_success([
+            'message' => esc_html__('Connection cleared successfully. Your AI assistant has been disconnected.', 'voicero-ai')
+        ]);
+
+    } catch (Exception $e) {
+        voicero_debug_log('Error clearing Voicero connection', [
+            'error' => $e->getMessage(),
+            'user' => wp_get_current_user()->user_login
+        ]);
+
+        wp_send_json_error([
+            'message' => esc_html__('An error occurred while clearing the connection. Please try again.', 'voicero-ai')
+        ]);
+    }
+}
+
+
 
 // Add new AJAX handlers for training steps
 add_action('wp_ajax_voicero_train_page', 'voicero_train_page');
@@ -223,9 +287,8 @@ function voicero_check_connection() {
         wp_send_json_error(['message' => esc_html__('No access key found', 'voicero-ai')]);
     }
 
-    $response = wp_remote_get(VOICERO_API_URL . '/connect', [
+    $response = wp_remote_get(VOICERO_API_URL . '/connect?access_token=' . urlencode($access_key), [
         'headers' => [
-            'Authorization' => 'Bearer ' . $access_key,
             'Content-Type' => 'application/json',
             'Accept' => 'application/json'
         ],
@@ -266,15 +329,27 @@ function voicero_sync_content() {
     check_ajax_referer('voicero_ajax_nonce', 'nonce');
 
     $data = voicero_collect_wordpress_data();
-    
     $access_key = voicero_get_access_key();
+    
+    // Log the data being sent to external API
+    error_log('=== SENDING TO EXTERNAL API ===');
+    error_log('API URL: http://localhost:3001/api/wordpress/sync');
+    error_log('Access Key: ' . substr($access_key, 0, 20) . '...');
+    error_log('Headers: ' . json_encode([
+        'Authorization' => 'Bearer ' . substr($access_key, 0, 20) . '...',
+        'Content-Type' => 'application/json',
+        'Accept' => 'application/json'
+    ]));
+    error_log('Data size: ' . strlen(json_encode($data)) . ' bytes');
+    error_log('Full JSON being sent: ' . json_encode($data, JSON_PRETTY_PRINT));
+    error_log('=== END API SEND LOG ===');
     if (empty($access_key)) {
         wp_send_json_error(['message' => esc_html__('No access key found', 'voicero-ai')]);
     }
 
     try {
         // 1. Sync the content
-        $sync_response = wp_remote_post(VOICERO_API_URL . '/wordpress/sync', [
+        $sync_response = wp_remote_post('http://localhost:3001/api/wordpress/sync', [
             'headers' => [
                 'Authorization' => 'Bearer ' . $access_key,
                 'Content-Type' => 'application/json',
@@ -286,22 +361,44 @@ function voicero_sync_content() {
         ]);
 
         if (is_wp_error($sync_response)) {
-            wp_send_json_error([
-                'message' => esc_html__('Sync failed: ', 'voicero-ai') . esc_html($sync_response->get_error_message()),
-                'code' => $sync_response->get_error_code(),
-                'stage' => 'sync',
-                'progress' => 0
-            ]);
+            $error_message = $sync_response->get_error_message();
+            error_log('Sync API Error: ' . $error_message);
+            
+            // Check if it's a connection error to localhost
+            if (strpos($error_message, 'Connection refused') !== false || strpos($error_message, 'couldn\'t connect') !== false) {
+                wp_send_json_error([
+                    'message' => esc_html__('Could not connect to localhost:3001. Make sure your local development server is running.', 'voicero-ai'),
+                    'code' => $sync_response->get_error_code(),
+                    'stage' => 'sync',
+                    'progress' => 0,
+                    'debug' => $error_message
+                ]);
+            } else {
+                wp_send_json_error([
+                    'message' => esc_html__('Sync failed: ', 'voicero-ai') . esc_html($error_message),
+                    'code' => $sync_response->get_error_code(),
+                    'stage' => 'sync',
+                    'progress' => 0
+                ]);
+            }
         }
 
         $response_code = wp_remote_retrieve_response_code($sync_response);
+        $response_body = wp_remote_retrieve_body($sync_response);
+        
+        // Log response from localhost:3001
+        error_log('=== RESPONSE FROM LOCALHOST:3001 ===');
+        error_log('Response Code: ' . $response_code);
+        error_log('Response Body: ' . $response_body);
+        error_log('=== END RESPONSE LOG ===');
+        
         if ($response_code !== 200) {
             wp_send_json_error([
                 'message' => esc_html__('Sync failed: Server returned ', 'voicero-ai') . esc_html($response_code),
                 'code' => $response_code,
                 'stage' => 'sync',
                 'progress' => 0,
-                'body' => wp_remote_retrieve_body($sync_response)
+                'body' => $response_body
             ]);
         }
 
@@ -312,8 +409,9 @@ function voicero_sync_content() {
             'stage' => 'sync',
             'progress' => 17, // Updated progress
             'complete' => false,
+            'sentToAPI' => $data, // Include the exact data we sent
             'details' => [
-                'sync' => json_decode(wp_remote_retrieve_body($sync_response), true)
+                'sync' => json_decode($response_body, true)
             ]
         ]);
 
@@ -336,75 +434,30 @@ function voicero_vectorize_content() {
         wp_send_json_error(['message' => esc_html__('No access key found', 'voicero-ai')]);
     }
 
-    // Increase timeout substantially for large sites
-    $vectorize_response = wp_remote_post(VOICERO_API_URL . '/wordpress/vectorize', [
+    // Log vectorize API call
+    error_log('=== CALLING VECTORIZE API (FIRE AND FORGET) ===');
+    error_log('Vectorize URL: http://localhost:3001/api/wordpress/vectorize');
+    error_log('=== END VECTORIZE LOG ===');
+    
+    // Fire and forget approach - call API with short timeout and non-blocking
+    wp_remote_post('http://localhost:3001/api/wordpress/vectorize', [
         'headers' => [
             'Authorization' => 'Bearer ' . $access_key,
             'Content-Type' => 'application/json',
             'Accept' => 'application/json'
         ],
-        'timeout' => 300, // Increase timeout to 5 minutes
+        'timeout' => 15, // 15 second timeout as requested
+        'blocking' => false, // Non-blocking - don't wait for response
         'sslverify' => false
     ]);
 
-    if (is_wp_error($vectorize_response)) {
-        $error_message = $vectorize_response->get_error_message();
-        $error_code = $vectorize_response->get_error_code();
-        
-        // Check if it's a timeout error
-        if (strpos($error_message, 'timed out') !== false || strpos($error_message, 'timeout') !== false) {
-            // For timeout errors, return a more helpful message
-            wp_send_json_error([
-                'message' => sprintf(
-                    /* translators: %s: detailed error message */
-                    esc_html__('The vectorization process is taking longer than expected due to the size of your content. This is normal for larger sites. Please try again and allow more time for processing.', 'voicero-ai')
-                ),
-                'code' => $error_code,
-                'stage' => 'vectorize',
-                'progress' => 17, // Keep progress at previous step
-                'retry_suggested' => true
-            ]);
-        } else {
-            // For other errors
-            wp_send_json_error([
-                'message' => sprintf(
-                    /* translators: %s: detailed error message */
-                    esc_html__('Vectorization failed: %s', 'voicero-ai'), 
-                    esc_html($error_message)
-                ),
-                'code' => $error_code,
-                'stage' => 'vectorize',
-                'progress' => 17 // Keep progress at previous step
-            ]);
-        }
-    }
-    
-    $response_code = wp_remote_retrieve_response_code($vectorize_response);
-    if ($response_code !== 200) {
-        $response_body = wp_remote_retrieve_body($vectorize_response);
-        
-        // Sanitize the response body to prevent XSS
-        $sanitized_body = wp_kses_post($response_body);
-         
-        wp_send_json_error([
-            'message' => sprintf(
-                /* translators: %s: HTTP status code */
-                esc_html__('Vectorization failed: Server returned %s', 'voicero-ai'),
-                esc_html($response_code)
-            ),
-            'code' => $response_code,
-            'stage' => 'vectorize',
-            'progress' => 17,
-            'body' => $sanitized_body
-        ]);
-    }
-
+    // Immediately return success without processing response
     wp_send_json_success([
-        'message' => esc_html__('Vectorization completed, setting up assistant...', 'voicero-ai'),
+        'message' => esc_html__('Vectorization initiated, setting up assistant...', 'voicero-ai'),
         'stage' => 'vectorize',
         'progress' => 34, // Updated progress
         'complete' => false,
-        'details' => json_decode(wp_remote_retrieve_body($vectorize_response), true)
+        'note' => 'Vectorization running in background'
     ]);
 }
 
@@ -823,6 +876,8 @@ function voicero_collect_wordpress_data() {
         'post_status' => 'publish',
         'numberposts' => -1
     ]);
+    
+    error_log('Raw WordPress posts found: ' . count($posts));
 
     // Get Authors (Users with relevant roles)
     $authors = get_users([
@@ -943,6 +998,7 @@ function voicero_collect_wordpress_data() {
 
     // Get Pages
     $pages = get_pages(['post_status' => 'publish']);
+    error_log('Raw WordPress pages found: ' . count($pages));
     if (!empty($pages)) {
         foreach ($pages as $page) {
             $data['pages'][] = [
@@ -987,6 +1043,7 @@ function voicero_collect_wordpress_data() {
             'status' => 'publish',
             'limit' => -1
         ]);
+        error_log('Raw WooCommerce products found: ' . count($products));
 
         foreach ($products as $product) {
             // Get reviews for this product
@@ -1027,6 +1084,33 @@ function voicero_collect_wordpress_data() {
         }
     }
 
+    // Log collected data for debugging
+    error_log('=== VOICERO DATA COLLECTION ===');
+    error_log('Posts count: ' . count($data['posts']));
+    error_log('Pages count: ' . count($data['pages']));
+    error_log('Products count: ' . count($data['products']));
+    error_log('Categories count: ' . count($data['categories']));
+    error_log('Tags count: ' . count($data['tags']));
+    error_log('Comments count: ' . count($data['comments']));
+    error_log('Reviews count: ' . count($data['reviews']));
+    error_log('Authors count: ' . count($data['authors']));
+    error_log('Media count: ' . count($data['media']));
+    error_log('Product Categories count: ' . count($data['productCategories']));
+    error_log('Product Tags count: ' . count($data['productTags']));
+    
+    // Log sample data for each type
+    if (!empty($data['posts'])) {
+        error_log('Sample Post: ' . json_encode(array_slice($data['posts'], 0, 1)));
+    }
+    if (!empty($data['pages'])) {
+        error_log('Sample Page: ' . json_encode(array_slice($data['pages'], 0, 1)));
+    }
+    if (!empty($data['products'])) {
+        error_log('Sample Product: ' . json_encode(array_slice($data['products'], 0, 1)));
+    }
+    
+    error_log('=== END VOICERO DATA COLLECTION ===');
+
     return $data;
 }
 
@@ -1058,9 +1142,8 @@ function voicero_render_admin_page() {
             $access_key = sanitize_text_field(wp_unslash($_POST['access_key']));
             
             // Verify the key is valid by making a test request
-            $test_response = wp_remote_get(VOICERO_API_URL . '/connect', [
+            $test_response = wp_remote_get(VOICERO_API_URL . '/connect?access_token=' . urlencode($access_key), [
                 'headers' => [
-                    'Authorization' => 'Bearer ' . $access_key,
                     'Content-Type' => 'application/json'
                 ],
                 'timeout' => 15,
@@ -1122,7 +1205,7 @@ function voicero_render_admin_page() {
     
     // Generate the connection URL with nonce
     $connect_url = wp_nonce_url(
-        "https://www.voicero.ai/app/connect?site_url={$encoded_site_url}&redirect_url={$encoded_admin_url}",
+        "https://56b2c4656c5a.ngrok-free.app/app/connect?site_url={$encoded_site_url}&redirect_url={$encoded_admin_url}",
         'voicero_connect'
     );
 
@@ -1183,18 +1266,7 @@ function voicero_render_admin_page() {
                     <div class="spinner is-active" style="float: none;"></div>
                     <p><?php esc_html_e('Loading website information...', 'voicero-ai'); ?></p>
                 </div>
-                
-                <div style="margin-top: 20px;">
-                    <form method="post" action="javascript:void(0);" id="sync-form" onsubmit="return false;">
-                        <?php wp_nonce_field('voicero_sync_content_nonce'); ?>
-                        <input type="submit" 
-                               name="sync_content" 
-                               id="sync-button" 
-                               class="button" 
-                               value="<?php esc_attr_e('Sync Content Now', 'voicero-ai'); ?>">
-                        <span id="sync-status" style="margin-left: 10px;"></span>
-                    </form>
-                </div>
+
             </div>
         <?php endif; ?>
     </div>   
@@ -1240,7 +1312,7 @@ function voicero_admin_enqueue_assets($hook_suffix) {
             'ajaxUrl'   => admin_url('admin-ajax.php'),
             'nonce'     => wp_create_nonce('voicero_ajax_nonce'),
             'accessKey' => $access_key,
-            'apiUrl'    => defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://www.voicero.ai/api',
+            'apiUrl'    => defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://56b2c4656c5a.ngrok-free.app/api',
             'websiteId' => get_option('voicero_website_id', '')
         ]
     );
@@ -1254,127 +1326,7 @@ function voicero_admin_enqueue_assets($hook_suffix) {
 }
 add_action('admin_enqueue_scripts', 'voicero_admin_enqueue_assets');
 
-/**
- * Enqueue frontend scripts for Voicero.AI
- */
-function voicero_frontend_enqueue_assets() {
-    // Only skip if we're in admin area
-    if (is_admin()) {
-        return;
-    }
-
-    // Get access key (will check this later)
-    $access_key = voicero_get_access_key();
-    
-    // Log debug info about the loading attempt
-    voicero_debug_log('Attempting to load frontend scripts', [
-        'has_access_key' => !empty($access_key),
-        'is_admin' => is_admin()
-    ]);
-
-    // Get all JS files from the user directory
-    $js_dir = plugin_dir_path(__FILE__) . 'assets/js/user/';
-    
-    // Check if the directory exists
-    if (!is_dir($js_dir)) {
-        voicero_debug_log('Frontend scripts directory not found', ['path' => $js_dir]);
-        return;
-    }
-    
-    // Get JS files with error handling
-    $js_files = @glob($js_dir . '*.js');
-    
-    // Check if glob failed or returned empty
-    if ($js_files === false || empty($js_files)) {
-        voicero_debug_log('No frontend scripts found or unable to read directory', [
-            'path' => $js_dir,
-            'glob_error' => $js_files === false
-        ]);
-        return;
-    }
-    
-    // Log the found files
-    voicero_debug_log('Found frontend scripts', ['files' => array_map('basename', $js_files)]);
-    
-    // Sort files to ensure core loads first
-    usort($js_files, function($a, $b) {
-        if (strpos($a, 'voicero-core.js') !== false) return -1;
-        if (strpos($b, 'voicero-core.js') !== false) return 1;
-        return strcmp($a, $b);
-    });
-    
-    // Register and enqueue each file
-    $core_handle = '';
-    $loaded_handles = [];
-    
-    foreach ($js_files as $js_file) {
-        // Check if file exists and is readable
-        if (!file_exists($js_file) || !is_readable($js_file)) {
-            voicero_debug_log('Script file not accessible', ['file' => $js_file]);
-            continue;
-        }
-        
-        $file_name = basename($js_file);
-        $handle = str_replace('.js', '', $file_name);
-        
-        // Determine dependencies
-        $deps = ['jquery'];
-        
-        // Set core as dependency for other files
-        if (strpos($file_name, 'voicero-core.js') !== false) {
-            $core_handle = $handle;
-        } elseif (!empty($core_handle)) {
-            $deps[] = $core_handle;
-        }
-        
-        // Special case for text dependency
-        if (strpos($file_name, 'voicero-contact.js') !== false && in_array('voicero-text', $loaded_handles)) {
-            $deps[] = 'voicero-text';
-        }
-        
-        // Get file URL
-        $file_url = plugin_dir_url(__FILE__) . 'assets/js/user/' . $file_name;
-        
-        // Register and enqueue script
-        wp_register_script(
-            $handle,
-            $file_url,
-            $deps,
-            filemtime($js_file),  // Use file modification time as version
-            true  // Load in footer
-        );
-        
-        wp_enqueue_script($handle);
-        $loaded_handles[] = $handle;
-        
-        voicero_debug_log('Enqueued script', [
-            'handle' => $handle,
-            'file' => $file_name,
-            'deps' => $deps
-        ]);
-    }
-    
-    // Pass config to scripts if core was loaded
-    if (!empty($core_handle)) {
-        wp_localize_script(
-            $core_handle,
-            'voiceroConfig',
-            [
-                'ajaxUrl'   => admin_url('admin-ajax.php'),
-                'nonce'     => wp_create_nonce('voicero_ajax_nonce'),
-                'apiUrl'    => defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://www.voicero.ai/api',
-                'siteUrl'   => get_site_url(),
-                'pluginUrl' => plugin_dir_url(__FILE__),
-                'websiteId' => get_option('voicero_website_id', ''),
-                'debug'     => defined('WP_DEBUG') && WP_DEBUG ? true : false,
-                'hasAccessKey' => !empty($access_key)
-            ]
-        );
-        
-        voicero_debug_log('Localized script config', ['core_handle' => $core_handle]);
-    }
-}
-add_action('wp_enqueue_scripts', 'voicero_frontend_enqueue_assets');
+// Frontend user scripts have been removed - admin scripts are handled separately
 
 
 

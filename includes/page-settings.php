@@ -30,7 +30,7 @@ function voicero_register_settings_scripts($hook) {
         'ajaxUrl' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('voicero_ajax_nonce'),
         'websiteId' => get_option('voicero_website_id', ''),
-        'apiUrl' => defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://www.voicero.ai/api',
+        'apiUrl' => defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://56b2c4656c5a.ngrok-free.app/api',
         'accessKey' => get_option('voicero_access_key', '')
     ));
 }
@@ -105,12 +105,7 @@ function voicero_render_settings_page() {
                     <div class="voicero-field-value" id="website-url-display"></div>
                 </div>
                 
-                <div class="voicero-field-group">
-                    <div class="voicero-field-label"><?php esc_html_e('Custom Instructions:', 'voicero-ai'); ?></div>
-                    <div class="voicero-field-value" id="custom-instructions-display">
-                        <em><?php esc_html_e('No custom instructions set', 'voicero-ai'); ?></em>
-                    </div>
-                </div>
+
             </div>
             
             <div class="voicero-section-edit hidden" id="website-info-edit">
@@ -125,11 +120,7 @@ function voicero_render_settings_page() {
                         <input type="url" id="website-url" name="website-url" value="https://is117a-nj.myshopify.com" class="regular-text">
                     </div>
                     
-                    <div class="voicero-field-group">
-                        <label for="custom-instructions"><?php esc_html_e('Custom Instructions:', 'voicero-ai'); ?></label>
-                        <textarea id="custom-instructions" name="custom-instructions" rows="4" class="large-text"></textarea>
-                        <p class="description"><?php esc_html_e('Add special instructions for how your AI assistant should behave or respond.', 'voicero-ai'); ?></p>
-                    </div>
+
                     
                     <div class="voicero-form-actions">
                         <button type="button" class="button button-secondary voicero-cancel-button" data-section="website">
@@ -196,226 +187,7 @@ function voicero_render_settings_page() {
                     </div>
                 </form>
             </div>
-        </div>
-        
-        <!-- AI Auto Features Section -->
-        <div class="card voicero-card" style="max-width: 800px; margin-top: 20px;">
-            <div class="voicero-card-header">
-                <h2><?php esc_html_e('AI Auto Features', 'voicero-ai'); ?></h2>
-                <button type="button" class="button button-secondary voicero-edit-button" data-section="ai-features">
-                    <?php esc_html_e('Edit', 'voicero-ai'); ?>
-                </button>
-            </div>
-            
-            <div class="voicero-section-content" id="ai-features-view">
-                <p><?php esc_html_e('Control which automated actions your AI assistant can perform. Disabling certain features may limit functionality.', 'voicero-ai'); ?></p>
-                
-                <div class="voicero-warning-notice">
-                    <span class="dashicons dashicons-warning"></span>
-                    <p><?php esc_html_e('Disabling these features will significantly reduce the effectiveness of your AI assistant.', 'voicero-ai'); ?></p>
                 </div>
-                
-                <h3><?php esc_html_e('Critical Features', 'voicero-ai'); ?></h3>
-                <ul class="voicero-features-list">
-                    <li>
-                        <span class="dashicons dashicons-yes"></span> 
-                        <?php esc_html_e('Allow AI to automatically redirect users to relevant pages', 'voicero-ai'); ?>
-                    </li>
-                    <li>
-                        <span class="dashicons dashicons-yes"></span> 
-                        <?php esc_html_e('Allow AI to scroll to relevant sections on the page', 'voicero-ai'); ?>
-                    </li>
-                    <li>
-                        <span class="dashicons dashicons-yes"></span> 
-                        <?php esc_html_e('Allow AI to highlight important elements on the page', 'voicero-ai'); ?>
-                    </li>
-                    <li>
-                        <span class="dashicons dashicons-yes"></span> 
-                        <?php esc_html_e('Allow AI to click buttons and links on behalf of users', 'voicero-ai'); ?>
-                    </li>
-                    <li>
-                        <span class="dashicons dashicons-yes"></span> 
-                        <?php esc_html_e('Allow AI to automatically fill forms for users', 'voicero-ai'); ?>
-                    </li>
-                </ul>
-                
-                <h3><?php esc_html_e('Order Features', 'voicero-ai'); ?></h3>
-                <ul class="voicero-features-list">
-                    <li>
-                        <span class="dashicons dashicons-yes"></span> 
-                        <?php esc_html_e('Allow AI to help users cancel orders', 'voicero-ai'); ?>
-                    </li>
-                    <li>
-                        <span class="dashicons dashicons-yes"></span> 
-                        <?php esc_html_e('Allow AI to help users return products', 'voicero-ai'); ?>
-                        <span class="voicero-coming-soon"><?php esc_html_e('Coming Soon', 'voicero-ai'); ?></span>
-                    </li>
-                    <li>
-                        <span class="dashicons dashicons-yes"></span> 
-                        <?php esc_html_e('Allow AI to help users exchange products', 'voicero-ai'); ?>
-                        <span class="voicero-coming-soon"><?php esc_html_e('Coming Soon', 'voicero-ai'); ?></span>
-                    </li>
-                    <li>
-                        <span class="dashicons dashicons-yes"></span> 
-                        <?php esc_html_e('Allow AI to help users track their orders', 'voicero-ai'); ?>
-                    </li>
-                    <li>
-                        <span class="dashicons dashicons-yes"></span> 
-                        <?php esc_html_e('Allow AI to fetch and display user order history', 'voicero-ai'); ?>
-                    </li>
-                </ul>
-                
-                <h3><?php esc_html_e('User Data Features', 'voicero-ai'); ?></h3>
-                <ul class="voicero-features-list">
-                    <li>
-                        <span class="dashicons dashicons-yes"></span> 
-                        <?php esc_html_e('Allow AI to help users update their account information', 'voicero-ai'); ?>
-                    </li>
-                    <li>
-                        <span class="dashicons dashicons-yes"></span> 
-                        <?php esc_html_e('Allow AI to help users log out', 'voicero-ai'); ?>
-                    </li>
-                    <li>
-                        <span class="dashicons dashicons-yes"></span> 
-                        <?php esc_html_e('Allow AI to help users log in', 'voicero-ai'); ?>
-                    </li>
-                </ul>
-                
-                <h3><?php esc_html_e('Content Generation Features', 'voicero-ai'); ?></h3>
-                <ul class="voicero-features-list">
-                    <li>
-                        <span class="dashicons dashicons-yes"></span> 
-                        <?php esc_html_e('Allow AI to generate images for users', 'voicero-ai'); ?>
-                        <span class="voicero-coming-soon"><?php esc_html_e('Coming Soon', 'voicero-ai'); ?></span>
-                    </li>
-                </ul>
-            </div>
-            
-            <div class="voicero-section-edit hidden" id="ai-features-edit">
-                <form id="ai-features-form">
-                    <p><?php esc_html_e('Control which automated actions your AI assistant can perform. Disabling certain features may limit functionality.', 'voicero-ai'); ?></p>
-                    
-                    <div class="voicero-warning-notice">
-                        <span class="dashicons dashicons-warning"></span>
-                        <p><?php esc_html_e('Disabling these features will significantly reduce the effectiveness of your AI assistant.', 'voicero-ai'); ?></p>
-                    </div>
-                    
-                    <h3><?php esc_html_e('Critical Features', 'voicero-ai'); ?></h3>
-                    <div class="voicero-feature-toggles">
-                        <label class="voicero-toggle">
-                            <input type="checkbox" name="ai_redirect" value="1" checked>
-                            <span class="voicero-toggle-slider"></span>
-                            <span class="voicero-toggle-label"><?php esc_html_e('Allow AI to automatically redirect users to relevant pages', 'voicero-ai'); ?></span>
-                        </label>
-                        
-                        <label class="voicero-toggle">
-                            <input type="checkbox" name="ai_scroll" value="1" checked>
-                            <span class="voicero-toggle-slider"></span>
-                            <span class="voicero-toggle-label"><?php esc_html_e('Allow AI to scroll to relevant sections on the page', 'voicero-ai'); ?></span>
-                        </label>
-                        
-                        <label class="voicero-toggle">
-                            <input type="checkbox" name="ai_highlight" value="1" checked>
-                            <span class="voicero-toggle-slider"></span>
-                            <span class="voicero-toggle-label"><?php esc_html_e('Allow AI to highlight important elements on the page', 'voicero-ai'); ?></span>
-                        </label>
-                        
-                        <label class="voicero-toggle">
-                            <input type="checkbox" name="ai_click" value="1" checked>
-                            <span class="voicero-toggle-slider"></span>
-                            <span class="voicero-toggle-label"><?php esc_html_e('Allow AI to click buttons and links on behalf of users', 'voicero-ai'); ?></span>
-                        </label>
-                        
-                        <label class="voicero-toggle">
-                            <input type="checkbox" name="ai_forms" value="1" checked>
-                            <span class="voicero-toggle-slider"></span>
-                            <span class="voicero-toggle-label"><?php esc_html_e('Allow AI to automatically fill forms for users', 'voicero-ai'); ?></span>
-                        </label>
-                    </div>
-                    
-                    <h3><?php esc_html_e('Order Features', 'voicero-ai'); ?></h3>
-                    <div class="voicero-feature-toggles">
-                        <label class="voicero-toggle">
-                            <input type="checkbox" name="ai_cancel_orders" value="1" checked>
-                            <span class="voicero-toggle-slider"></span>
-                            <span class="voicero-toggle-label"><?php esc_html_e('Allow AI to help users cancel orders', 'voicero-ai'); ?></span>
-                        </label>
-                        
-                        <label class="voicero-toggle voicero-disabled">
-                            <input type="checkbox" name="ai_return_products" value="1" checked disabled>
-                            <span class="voicero-toggle-slider"></span>
-                            <span class="voicero-toggle-label">
-                                <?php esc_html_e('Allow AI to help users return products', 'voicero-ai'); ?>
-                                <span class="voicero-coming-soon"><?php esc_html_e('Coming Soon', 'voicero-ai'); ?></span>
-                            </span>
-                        </label>
-                        
-                        <label class="voicero-toggle voicero-disabled">
-                            <input type="checkbox" name="ai_exchange_products" value="1" checked disabled>
-                            <span class="voicero-toggle-slider"></span>
-                            <span class="voicero-toggle-label">
-                                <?php esc_html_e('Allow AI to help users exchange products', 'voicero-ai'); ?>
-                                <span class="voicero-coming-soon"><?php esc_html_e('Coming Soon', 'voicero-ai'); ?></span>
-                            </span>
-                        </label>
-                        
-                        <label class="voicero-toggle">
-                            <input type="checkbox" name="ai_track_orders" value="1" checked>
-                            <span class="voicero-toggle-slider"></span>
-                            <span class="voicero-toggle-label"><?php esc_html_e('Allow AI to help users track their orders', 'voicero-ai'); ?></span>
-                        </label>
-                        
-                        <label class="voicero-toggle">
-                            <input type="checkbox" name="ai_order_history" value="1" checked>
-                            <span class="voicero-toggle-slider"></span>
-                            <span class="voicero-toggle-label"><?php esc_html_e('Allow AI to fetch and display user order history', 'voicero-ai'); ?></span>
-                        </label>
-                    </div>
-                    
-                    <h3><?php esc_html_e('User Data Features', 'voicero-ai'); ?></h3>
-                    <div class="voicero-feature-toggles">
-                        <label class="voicero-toggle">
-                            <input type="checkbox" name="ai_update_account" value="1" checked>
-                            <span class="voicero-toggle-slider"></span>
-                            <span class="voicero-toggle-label"><?php esc_html_e('Allow AI to help users update their account information', 'voicero-ai'); ?></span>
-                        </label>
-                        
-                        <label class="voicero-toggle">
-                            <input type="checkbox" name="ai_logout" value="1" checked>
-                            <span class="voicero-toggle-slider"></span>
-                            <span class="voicero-toggle-label"><?php esc_html_e('Allow AI to help users log out', 'voicero-ai'); ?></span>
-                        </label>
-                        
-                        <label class="voicero-toggle">
-                            <input type="checkbox" name="ai_login" value="1" checked>
-                            <span class="voicero-toggle-slider"></span>
-                            <span class="voicero-toggle-label"><?php esc_html_e('Allow AI to help users log in', 'voicero-ai'); ?></span>
-                        </label>
-                    </div>
-                    
-                    <h3><?php esc_html_e('Content Generation Features', 'voicero-ai'); ?></h3>
-                    <div class="voicero-feature-toggles">
-                        <label class="voicero-toggle voicero-disabled">
-                            <input type="checkbox" name="ai_generate_images" value="1" checked disabled>
-                            <span class="voicero-toggle-slider"></span>
-                            <span class="voicero-toggle-label">
-                                <?php esc_html_e('Allow AI to generate images for users', 'voicero-ai'); ?>
-                                <span class="voicero-coming-soon"><?php esc_html_e('Coming Soon', 'voicero-ai'); ?></span>
-                            </span>
-                        </label>
-                    </div>
-                    
-                    <div class="voicero-form-actions">
-                        <button type="button" class="button button-secondary voicero-cancel-button" data-section="ai-features">
-                            <?php esc_html_e('Cancel', 'voicero-ai'); ?>
-                        </button>
-                        <button type="submit" class="button button-primary">
-                            <?php esc_html_e('Save Changes', 'voicero-ai'); ?>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
         
         <!-- Subscription Information Section -->
         <div class="card voicero-card" style="max-width: 800px; margin-top: 20px;">
@@ -440,19 +212,10 @@ function voicero_render_settings_page() {
                     <div class="voicero-field-label"><?php esc_html_e('Last Synced:', 'voicero-ai'); ?></div>
                     <div class="voicero-field-value"></div>
                 </div>
-                
-                <div class="voicero-subscription-actions" id="subscription-button-container">
-                    <a href="<?php 
-                        $website_id = get_option('voicero_website_id', ''); 
-                        echo esc_url('https://www.voicero.ai/app/websites/website?id=' . $website_id);
-                    ?>" class="button button-primary" target="_blank">
-                        <?php esc_html_e('Update Subscription', 'voicero-ai'); ?>
-                    </a>
-                </div>
             </div>
         </div>
 
-
+        
         
         <!-- Add inline CSS for the settings page -->
         <style type="text/css">

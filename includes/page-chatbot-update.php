@@ -89,53 +89,10 @@ function voicero_render_chatbot_update_page() {
     // Set defaults and then override with API data if available
     $chatbot_name = !empty($website_data['botName']) ? $website_data['botName'] : '';
     $welcome_message = !empty($website_data['customWelcomeMessage']) ? $website_data['customWelcomeMessage'] : '';
-    $click_message = !empty($website_data['clickMessage']) ? $website_data['clickMessage'] : '';
-    $allow_multi_ai_review = isset($website_data['allowMultiAIReview']) ? (bool)$website_data['allowMultiAIReview'] : false;
     $custom_instructions = !empty($website_data['customInstructions']) ? $website_data['customInstructions'] : '';
-    $primary_color = !empty($website_data['color']) ? $website_data['color'] : '#6366F1'; // Default to indigo
-    $remove_highlighting = isset($website_data['removeHighlight']) ? (bool)$website_data['removeHighlight'] : false;
+    $primary_color = !empty($website_data['color']) ? $website_data['color'] : '#008060'; // Default to teal
     
-    // Map API icon types to UI options
-    $bot_icon_map = array(
-        'MessageIcon' => 'Message',
-        'VoiceIcon' => 'Voice',
-        'BotIcon' => 'Bot'
-    );
-    
-    $voice_icon_map = array(
-        'MicrophoneIcon' => 'Microphone',
-        'WaveformIcon' => 'Waveform',
-        'SpeakerIcon' => 'Speaker'
-    );
-    
-    $message_icon_map = array(
-        'MessageIcon' => 'Message',
-        'DocumentIcon' => 'Document',
-        'CursorIcon' => 'Cursor'
-    );
-    
-    // Reverse the maps to get from API to UI
-    $bot_icon_map_reverse = array_flip($bot_icon_map);
-    $voice_icon_map_reverse = array_flip($voice_icon_map);
-    $message_icon_map_reverse = array_flip($message_icon_map);
-    
-    // Default values for icons
-    $bot_icon_type = 'Bot';
-    $voice_icon_type = 'Microphone';
-    $message_icon_type = 'Message';
-    
-    // Get icon types from API data if available
-    if (!empty($website_data['iconBot']) && isset($bot_icon_map[$website_data['iconBot']])) {
-        $bot_icon_type = $bot_icon_map[$website_data['iconBot']];
-    }
-    
-    if (!empty($website_data['iconVoice']) && isset($voice_icon_map[$website_data['iconVoice']])) {
-        $voice_icon_type = $voice_icon_map[$website_data['iconVoice']];
-    }
-    
-    if (!empty($website_data['iconMessage']) && isset($message_icon_map[$website_data['iconMessage']])) {
-        $message_icon_type = $message_icon_map[$website_data['iconMessage']];
-    }
+
     
     // Get suggested questions
     $suggested_questions = !empty($website_data['popUpQuestions']) ? $website_data['popUpQuestions'] : array();
@@ -150,43 +107,8 @@ function voicero_render_chatbot_update_page() {
         $last_synced = $last_synced_date->format('m/d/Y, h:i:s A');
     }
     
-    // SVG Icons for different options
-    $svg_icons = array(
-        // Voice icons
-        'microphone' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z" /><path d="M19 11a1 1 0 1 0-2 0 5 5 0 0 1-10 0 1 1 0 1 0-2 0 7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11z" /></svg>',
-        'waveform' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M3 12h2v3H3v-3zm4-4h2v10H7V8zm4-6h2v22h-2V2zm4 6h2v10h-2V8zm4 4h2v3h-2v-3z" /></svg>',
-        'speaker' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M5 9v6h4l5 5V4L9 9H5zm13.54.12a1 1 0 1 0-1.41 1.42 3 3 0 0 1 0 4.24 1 1 0 1 0 1.41 1.41 5 5 0 0 0 0-7.07z" /></svg>',
-        
-        // Message icons
-        'message' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zM4 16V4h16v12H5.17L4 17.17V16z" /></svg>',
-        'cursor' => '<svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" width="24" height="24"><path d="M11 2h2v20h-2z" /></svg>',
-        'document' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M4 4h16v2H4V4zm0 4h16v2H4V8zm0 4h10v2H4v-2zm0 4h16v2H4v-2z" /></svg>',
-        
-        // Bot icons
-        'bot' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="24" height="24" fill="currentColor"><rect x="12" y="16" width="40" height="32" rx="10" ry="10" stroke="black" stroke-width="2" fill="currentColor" /><circle cx="22" cy="32" r="4" fill="white" /><circle cx="42" cy="32" r="4" fill="white" /><path d="M24 42c4 4 12 4 16 0" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" /><line x1="32" y1="8" x2="32" y2="16" stroke="black" stroke-width="2" /><circle cx="32" cy="6" r="2" fill="black" /></svg>',
-        'voice' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M5 9v6h4l5 5V4L9 9H5zm13.54.12a1 1 0 1 0-1.41 1.42 3 3 0 0 1 0 4.24 1 1 0 1 0 1.41 1.41 5 5 0 0 0 0-7.07z" /></svg>',
-        
-        // Also add capitalized versions to match the UI
-        'Bot' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="24" height="24" fill="currentColor"><rect x="12" y="16" width="40" height="32" rx="10" ry="10" stroke="black" stroke-width="2" fill="currentColor" /><circle cx="22" cy="32" r="4" fill="white" /><circle cx="42" cy="32" r="4" fill="white" /><path d="M24 42c4 4 12 4 16 0" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" /><line x1="32" y1="8" x2="32" y2="16" stroke="black" stroke-width="2" /><circle cx="32" cy="6" r="2" fill="black" /></svg>',
-        'Voice' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M5 9v6h4l5 5V4L9 9H5zm13.54.12a1 1 0 1 0-1.41 1.42 3 3 0 0 1 0 4.24 1 1 0 1 0 1.41 1.41 5 5 0 0 0 0-7.07z" /></svg>',
-        'Message' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zM4 16V4h16v12H5.17L4 17.17V16z" /></svg>',
-        'Microphone' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z" /><path d="M19 11a1 1 0 1 0-2 0 5 5 0 0 1-10 0 1 1 0 1 0-2 0 7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11z" /></svg>',
-        'Waveform' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M3 12h2v3H3v-3zm4-4h2v10H7V8zm4-6h2v22h-2V2zm4 6h2v10h-2V8zm4 4h2v3h-2v-3z" /></svg>',
-        'Speaker' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M5 9v6h4l5 5V4L9 9H5zm13.54.12a1 1 0 1 0-1.41 1.42 3 3 0 0 1 0 4.24 1 1 0 1 0 1.41 1.41 5 5 0 0 0 0-7.07z" /></svg>',
-        'Document' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M4 4h16v2H4V4zm0 4h16v2H4V8zm0 4h10v2H4v-2zm0 4h16v2H4v-2z" /></svg>',
-        'Cursor' => '<svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" width="24" height="24"><path d="M11 2h2v20h-2z" /></svg>',
-    );
-    
-    // Pass website data and SVG icons to JavaScript
+    // Pass website data to JavaScript
     wp_localize_script('voicero-chatbot', 'voiceroChatbotData', $website_data);
-    wp_localize_script('voicero-chatbot', 'voiceroSvgIcons', $svg_icons);
-    
-    // Enqueue jQuery UI for color picker
-    wp_enqueue_script('jquery-ui-core');
-    wp_enqueue_script('jquery-ui-widget');
-    wp_enqueue_script('jquery-ui-draggable');
-    wp_enqueue_script('jquery-ui-mouse');
-    wp_enqueue_script('jquery-ui-slider');
     
     ?>
     <div class="wrap voicero-chatbot-page">
@@ -205,6 +127,7 @@ function voicero_render_chatbot_update_page() {
         <form id="voicero-chatbot-form" method="post" action="javascript:void(0);">
             <?php wp_nonce_field('voicero_chatbot_nonce', 'voicero_chatbot_nonce'); ?>
             <input type="hidden" id="website-id" name="website_id" value="<?php echo esc_attr($website_id); ?>">
+            <input type="hidden" id="access-key" name="access_key" value="<?php echo esc_attr($access_key); ?>">
             
             <!-- Chatbot Identity Section -->
             <div class="voicero-card">
@@ -213,14 +136,14 @@ function voicero_render_chatbot_update_page() {
                         <span class="dashicons dashicons-admin-users"></span>
                     </div>
                     <h2><?php esc_html_e( 'Chatbot Identity', 'voicero-ai' ); ?></h2>
-                    <span class="required-badge"><?php esc_html_e( 'Required', 'voicero-ai' ); ?></span>
                 </div>
                 
                 <div class="voicero-card-content">
                     <div class="form-field">
                         <label for="chatbot-name"><?php esc_html_e( 'Chatbot Name', 'voicero-ai' ); ?></label>
-                        <input type="text" id="chatbot-name" name="chatbot_name" value="<?php echo esc_attr($chatbot_name); ?>" maxlength="10" required>
-                        <p class="field-description"><?php esc_html_e( 'The name displayed to your customers (max 3 words, 10 characters)', 'voicero-ai' ); ?></p>
+                        <input type="text" id="chatbot-name" name="chatbot_name" value="<?php echo esc_attr($chatbot_name); ?>" maxlength="120">
+                        <p class="field-description"><?php esc_html_e( 'The name displayed to your customers (max 120 characters)', 'voicero-ai' ); ?></p>
+                        <div class="voicero-form-error" id="chatbot-name-error"></div>
                     </div>
                     
                     <div class="form-field">
@@ -228,21 +151,7 @@ function voicero_render_chatbot_update_page() {
                         <textarea id="welcome-message" name="welcome_message" rows="3"><?php echo esc_textarea($welcome_message); ?></textarea>
                         <p class="field-description"><?php esc_html_e( 'First message shown when a customer opens the chat (max 25 words)', 'voicero-ai' ); ?></p>
                         <div class="word-count" id="welcome-message-count">0/25 words</div>
-                    </div>
-                    
-                    <div class="form-field">
-                        <label for="click-message"><?php esc_html_e( 'Click Message', 'voicero-ai' ); ?></label>
-                        <textarea id="click-message" name="click_message" rows="2"><?php echo esc_textarea($click_message); ?></textarea>
-                        <p class="field-description"><?php esc_html_e( 'Mini bubble message that entices the user to click the chatbot (max 25 words)', 'voicero-ai' ); ?></p>
-                        <div class="word-count" id="click-message-count">0/25 words</div>
-                    </div>
-                    
-                    <div class="form-field checkbox-field">
-                        <label>
-                            <input type="checkbox" id="allow-multi-ai-review" name="allow_multi_ai_review" value="1" <?php checked($allow_multi_ai_review, true); ?>>
-                            <?php esc_html_e( 'Allow Multi AI Review', 'voicero-ai' ); ?>
-                        </label>
-                        <p class="field-description"><?php esc_html_e( 'When enabled, allows unlimited AI overview resets', 'voicero-ai' ); ?></p>
+                        <div class="voicero-form-error" id="welcome-message-error"></div>
                     </div>
                     
                     <div class="form-field">
@@ -250,6 +159,7 @@ function voicero_render_chatbot_update_page() {
                         <textarea id="custom-instructions" name="custom_instructions" rows="5"><?php echo esc_textarea($custom_instructions); ?></textarea>
                         <p class="field-description"><?php esc_html_e( 'Specific instructions for how the AI should behave or respond (max 50 words)', 'voicero-ai' ); ?></p>
                         <div class="word-count" id="custom-instructions-count">0/50 words</div>
+                        <div class="voicero-form-error" id="custom-instructions-error"></div>
                     </div>
                 </div>
             </div>
@@ -291,6 +201,8 @@ function voicero_render_chatbot_update_page() {
                             </button>
                         </div>
                     </div>
+                    
+                    <div class="voicero-form-error" id="popup-questions-error"></div>
                 </div>
             </div>
             
@@ -306,98 +218,234 @@ function voicero_render_chatbot_update_page() {
                 <div class="voicero-card-content">
                     <div class="form-field">
                         <label><?php esc_html_e( 'Primary Color', 'voicero-ai' ); ?></label>
-                        <div class="color-picker-container">
-                            <div id="color-picker"></div>
-                            <div class="color-value-display" style="margin-left: 15px; display: inline-flex; align-items: center;">
-                                <div class="color-preview" style="width: 30px; height: 30px; background: <?php echo esc_attr($primary_color); ?>; border: 1px solid #ddd; border-radius: 3px; display: inline-block;"></div>
-                                <input type="text" id="primary-color" name="primary_color" value="<?php echo esc_attr($primary_color); ?>" style="width: 100px; margin-left: 10px; font-family: monospace;" />
-                            </div>
+                        <div class="color-picker-container" style="display: flex; align-items: center; gap: 15px; margin-top: 10px;">
+                            <input type="color" id="primary-color" name="primary_color" value="<?php echo esc_attr($primary_color); ?>" style="width: 50px; height: 40px; border: none; border-radius: 4px; cursor: pointer;" />
+                            <input type="text" id="color-input" name="color_input" value="<?php echo esc_attr($primary_color); ?>" placeholder="#008060 or rgb(0,128,96) or 0,128,96" style="width: 200px; font-family: monospace;" />
+                            <div class="color-preview" style="width: 30px; height: 30px; background: <?php echo esc_attr($primary_color); ?>; border: 1px solid #ddd; border-radius: 4px; display: inline-block;"></div>
                         </div>
-                        <p class="field-description"><?php esc_html_e( 'This color will be used for the chatbot button and header', 'voicero-ai' ); ?></p>
-                    </div>
-                    
-                    <div class="form-field checkbox-field">
-                        <label>
-                            <input type="checkbox" id="remove-highlighting" name="remove_highlighting" value="1" <?php checked($remove_highlighting, true); ?>>
-                            <?php esc_html_e( 'Remove highlighting from AI answers', 'voicero-ai' ); ?>
-                        </label>
-                        <p class="field-description"><?php esc_html_e( 'When enabled, color highlighting will be removed from AI Chooser', 'voicero-ai' ); ?></p>
-                    </div>
-                    
-                    <div class="form-field">
-                        <label><?php esc_html_e( 'Bot Icon Type', 'voicero-ai' ); ?></label>
-                        <div class="icon-selector">
-                            <select id="bot-icon-type" name="bot_icon_type">
-                                <option value="Bot" <?php selected($bot_icon_type, 'Bot'); ?>><?php esc_html_e( 'Bot', 'voicero-ai' ); ?></option>
-                                <option value="Voice" <?php selected($bot_icon_type, 'Voice'); ?>><?php esc_html_e( 'Voice', 'voicero-ai' ); ?></option>
-                                <option value="Message" <?php selected($bot_icon_type, 'Message'); ?>><?php esc_html_e( 'Message', 'voicero-ai' ); ?></option>
-                            </select>
-                            <div class="icon-preview bot-icon">
-                                <?php 
-                                // Try both capitalized and lowercase version
-                                if (isset($svg_icons[$bot_icon_type])) {
-                                    echo wp_kses_post($svg_icons[$bot_icon_type]);
-                                } elseif (isset($svg_icons[strtolower($bot_icon_type)])) {
-                                    echo wp_kses_post($svg_icons[strtolower($bot_icon_type)]);
-                                } else {
-                                    echo '<span class="dashicons dashicons-admin-generic"></span>';
-                                }
-                                ?>
-                            </div>
-                        </div>
-                        <p class="field-description"><?php esc_html_e( 'Icon displayed for the chatbot', 'voicero-ai' ); ?></p>
-                    </div>
-                    
-                    <div class="form-field">
-                        <label><?php esc_html_e( 'Voice Icon Type', 'voicero-ai' ); ?></label>
-                        <div class="icon-selector">
-                            <select id="voice-icon-type" name="voice_icon_type">
-                                <option value="Microphone" <?php selected($voice_icon_type, 'Microphone'); ?>><?php esc_html_e( 'Microphone', 'voicero-ai' ); ?></option>
-                                <option value="Waveform" <?php selected($voice_icon_type, 'Waveform'); ?>><?php esc_html_e( 'Waveform', 'voicero-ai' ); ?></option>
-                                <option value="Speaker" <?php selected($voice_icon_type, 'Speaker'); ?>><?php esc_html_e( 'Speaker', 'voicero-ai' ); ?></option>
-                            </select>
-                            <div class="icon-preview voice-icon">
-                                <?php 
-                                // Try both capitalized and lowercase version
-                                if (isset($svg_icons[$voice_icon_type])) {
-                                    echo wp_kses_post($svg_icons[$voice_icon_type]);
-                                } elseif (isset($svg_icons[strtolower($voice_icon_type)])) {
-                                    echo wp_kses_post($svg_icons[strtolower($voice_icon_type)]);
-                                } else {
-                                    echo '<span class="dashicons dashicons-admin-generic"></span>';
-                                }
-                                ?>
-                            </div>
-                        </div>
-                        <p class="field-description"><?php esc_html_e( 'Icon displayed for voice input', 'voicero-ai' ); ?></p>
-                    </div>
-                    
-                    <div class="form-field">
-                        <label><?php esc_html_e( 'Message Icon Type', 'voicero-ai' ); ?></label>
-                        <div class="icon-selector">
-                            <select id="message-icon-type" name="message_icon_type">
-                                <option value="Message" <?php selected($message_icon_type, 'Message'); ?>><?php esc_html_e( 'Message', 'voicero-ai' ); ?></option>
-                                <option value="Document" <?php selected($message_icon_type, 'Document'); ?>><?php esc_html_e( 'Document', 'voicero-ai' ); ?></option>
-                                <option value="Cursor" <?php selected($message_icon_type, 'Cursor'); ?>><?php esc_html_e( 'Cursor', 'voicero-ai' ); ?></option>
-                            </select>
-                            <div class="icon-preview message-icon">
-                                <?php 
-                                // Try both capitalized and lowercase version
-                                if (isset($svg_icons[$message_icon_type])) {
-                                    echo wp_kses_post($svg_icons[$message_icon_type]);
-                                } elseif (isset($svg_icons[strtolower($message_icon_type)])) {
-                                    echo wp_kses_post($svg_icons[strtolower($message_icon_type)]);
-                                } else {
-                                    echo '<span class="dashicons dashicons-admin-generic"></span>';
-                                }
-                                ?>
-                            </div>
-                        </div>
-                        <p class="field-description"><?php esc_html_e( 'Icon displayed for chat messages', 'voicero-ai' ); ?></p>
+                        <p class="field-description"><?php esc_html_e( 'This color will be used for the chatbot button and header. Supports hex (#008060), RGB (rgb(0,128,96)), or comma-separated (0,128,96) formats.', 'voicero-ai' ); ?></p>
                     </div>
                 </div>
             </div>
             
+            <!-- AI UI Section -->
+            <div class="voicero-card">
+                <div class="voicero-card-header">
+                    <div class="card-header-icon">
+                        <span class="dashicons dashicons-admin-settings"></span>
+                    </div>
+                    <h2><?php esc_html_e( 'AI UI', 'voicero-ai' ); ?></h2>
+                </div>
+                
+                <div class="voicero-card-content">
+                    <div class="form-field checkbox-field">
+                        <label>
+                            <input type="checkbox" id="activate-all-ai" name="activate_all_ai">
+                            <?php esc_html_e( 'Activate All', 'voicero-ai' ); ?>
+                        </label>
+                        <p class="field-description"><?php esc_html_e( 'Toggle both Voice and Text AI', 'voicero-ai' ); ?></p>
+                    </div>
+                    
+                    <div class="form-field checkbox-field">
+                        <label>
+                            <input type="checkbox" id="show-voice-ai" name="show_voice_ai" value="1" checked>
+                            <?php esc_html_e( 'Voice AI', 'voicero-ai' ); ?>
+                        </label>
+                        <p class="field-description"><?php esc_html_e( 'Enable voice-based assistant UI', 'voicero-ai' ); ?></p>
+                    </div>
+                    
+                    <div class="form-field checkbox-field">
+                        <label>
+                            <input type="checkbox" id="show-text-ai" name="show_text_ai" value="1" checked>
+                            <?php esc_html_e( 'Text AI', 'voicero-ai' ); ?>
+                        </label>
+                        <p class="field-description"><?php esc_html_e( 'Enable text chat assistant UI', 'voicero-ai' ); ?></p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- AI Auto Features Section -->
+            <div class="voicero-card">
+                <div class="voicero-card-header">
+                    <div class="card-header-icon">
+                        <span class="dashicons dashicons-admin-settings"></span>
+                    </div>
+                    <h2><?php esc_html_e( 'AI Auto Features', 'voicero-ai' ); ?></h2>
+                </div>
+                
+                <div class="voicero-card-content">
+                    <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 12px; border-radius: 4px; margin-bottom: 20px;">
+                        <p style="margin: 0; color: #856404;"><strong><?php esc_html_e( 'Warning:', 'voicero-ai' ); ?></strong> <?php esc_html_e( 'Disabling these features may reduce the assistant\'s effectiveness.', 'voicero-ai' ); ?></p>
+                    </div>
+                    
+                    <div class="auto-features-grid">
+                        <div class="auto-feature-item">
+                            <label>
+                                <input type="checkbox" id="allow-auto-redirect" name="allowAutoRedirect">
+                                <?php esc_html_e( 'Automatically redirect users to relevant pages', 'voicero-ai' ); ?>
+                            </label>
+                        </div>
+                        
+                        <div class="auto-feature-item">
+                            <label>
+                                <input type="checkbox" id="allow-auto-scroll" name="allowAutoScroll">
+                                <?php esc_html_e( 'Scroll to relevant sections on the page', 'voicero-ai' ); ?>
+                            </label>
+                        </div>
+                        
+                        <div class="auto-feature-item">
+                            <label>
+                                <input type="checkbox" id="allow-auto-highlight" name="allowAutoHighlight">
+                                <?php esc_html_e( 'Highlight important elements on the page', 'voicero-ai' ); ?>
+                            </label>
+                        </div>
+                        
+                        <div class="auto-feature-item">
+                            <label>
+                                <input type="checkbox" id="allow-auto-click" name="allowAutoClick">
+                                <?php esc_html_e( 'Click buttons and links on behalf of users', 'voicero-ai' ); ?>
+                            </label>
+                        </div>
+                        
+                        <div class="auto-feature-item">
+                            <label>
+                                <input type="checkbox" id="allow-auto-fill-form" name="allowAutoFillForm" checked>
+                                <?php esc_html_e( 'Automatically fill forms for users', 'voicero-ai' ); ?>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <h4 style="margin: 25px 0 15px 0; border-bottom: 1px solid #ddd; padding-bottom: 8px;"><?php esc_html_e( 'Order Features', 'voicero-ai' ); ?></h4>
+                    <div class="auto-features-grid">
+                        <div class="auto-feature-item">
+                            <label>
+                                <input type="checkbox" id="allow-auto-cancel" name="allowAutoCancel">
+                                <?php esc_html_e( 'Help users cancel orders', 'voicero-ai' ); ?>
+                            </label>
+                        </div>
+                        
+                        <div class="auto-feature-item">
+                            <label>
+                                <input type="checkbox" id="allow-auto-return" name="allowAutoReturn" disabled>
+                                <?php esc_html_e( 'Help users return products', 'voicero-ai' ); ?>
+                            </label>
+                        </div>
+                        
+                        <div class="auto-feature-item">
+                            <label>
+                                <input type="checkbox" id="allow-auto-exchange" name="allowAutoExchange" disabled>
+                                <?php esc_html_e( 'Help users exchange products', 'voicero-ai' ); ?>
+                            </label>
+                        </div>
+                        
+                        <div class="auto-feature-item">
+                            <label>
+                                <input type="checkbox" id="allow-auto-track-order" name="allowAutoTrackOrder" checked>
+                                <?php esc_html_e( 'Help users track their orders', 'voicero-ai' ); ?>
+                            </label>
+                        </div>
+                        
+                        <div class="auto-feature-item">
+                            <label>
+                                <input type="checkbox" id="allow-auto-get-user-orders" name="allowAutoGetUserOrders">
+                                <?php esc_html_e( 'Fetch and display user order history', 'voicero-ai' ); ?>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <h4 style="margin: 25px 0 15px 0; border-bottom: 1px solid #ddd; padding-bottom: 8px;"><?php esc_html_e( 'User Data Features', 'voicero-ai' ); ?></h4>
+                    <div class="auto-features-grid">
+                        <div class="auto-feature-item">
+                            <label>
+                                <input type="checkbox" id="allow-auto-update-user-info" name="allowAutoUpdateUserInfo">
+                                <?php esc_html_e( 'Help users update their account information', 'voicero-ai' ); ?>
+                            </label>
+                        </div>
+                        
+                        <div class="auto-feature-item">
+                            <label>
+                                <input type="checkbox" id="allow-auto-logout" name="allowAutoLogout" checked>
+                                <?php esc_html_e( 'Help users log out', 'voicero-ai' ); ?>
+                            </label>
+                        </div>
+                        
+                        <div class="auto-feature-item">
+                            <label>
+                                <input type="checkbox" id="allow-auto-login" name="allowAutoLogin" checked>
+                                <?php esc_html_e( 'Help users log in', 'voicero-ai' ); ?>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <h4 style="margin: 25px 0 15px 0; border-bottom: 1px solid #ddd; padding-bottom: 8px;"><?php esc_html_e( 'Content Generation Features', 'voicero-ai' ); ?></h4>
+                    <div class="auto-features-grid">
+                        <div class="auto-feature-item">
+                            <label>
+                                <input type="checkbox" id="allow-auto-generate-image" name="allowAutoGenerateImage" disabled>
+                                <?php esc_html_e( 'Generate images for users', 'voicero-ai' ); ?>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bottom Navigation Section -->
+            <div class="voicero-card">
+                <div class="voicero-card-header">
+                    <div class="card-header-icon">
+                        <span class="dashicons dashicons-admin-settings"></span>
+                    </div>
+                    <h2><?php esc_html_e( 'Bottom Navigation', 'voicero-ai' ); ?></h2>
+                </div>
+                
+                <div class="voicero-card-content">
+                    <div class="form-field checkbox-field">
+                        <label>
+                            <input type="checkbox" id="show-home" name="show_home" value="1" checked>
+                            <?php esc_html_e( 'Home', 'voicero-ai' ); ?>
+                        </label>
+                        <p class="field-description"><?php esc_html_e( 'Shown in nav', 'voicero-ai' ); ?></p>
+                    </div>
+                    
+                    <div class="form-field checkbox-field">
+                        <label>
+                            <input type="checkbox" id="show-news" name="show_news" value="1" checked>
+                            <?php esc_html_e( 'News', 'voicero-ai' ); ?>
+                        </label>
+                        <p class="field-description"><?php esc_html_e( 'Shown in nav', 'voicero-ai' ); ?></p>
+                    </div>
+                    
+                    <div class="form-field checkbox-field">
+                        <label>
+                            <input type="checkbox" id="show-help" name="show_help" value="1" checked>
+                            <?php esc_html_e( 'Help', 'voicero-ai' ); ?>
+                        </label>
+                        <p class="field-description"><?php esc_html_e( 'Shown in nav', 'voicero-ai' ); ?></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Website Information Section -->
+            <div class="voicero-card">
+                <div class="voicero-card-header">
+                    <div class="card-header-icon">
+                        <span class="dashicons dashicons-admin-site-alt3"></span>
+                    </div>
+                    <h2><?php esc_html_e( 'Website Information', 'voicero-ai' ); ?></h2>
+                </div>
+                
+                <div class="voicero-card-content">
+                    <div class="info-field">
+                        <span class="info-label"><?php esc_html_e( 'Website:', 'voicero-ai' ); ?></span>
+                        <span class="info-value"><?php echo esc_html($website_name); ?></span>
+                    </div>
+                    
+                    <div class="info-field">
+                        <span class="info-label"><?php esc_html_e( 'Last Synced:', 'voicero-ai' ); ?></span>
+                        <span class="info-value"><?php echo esc_html($last_synced); ?></span>
+                    </div>
+                </div>
+            </div>
            
         </form>
     </div>

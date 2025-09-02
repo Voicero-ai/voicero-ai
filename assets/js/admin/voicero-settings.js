@@ -403,14 +403,10 @@
    */
   function showEditForm(section) {
     // Hide view content
-    $(
-      `#${section}-info-view, #${section}-settings-view, #ai-features-view`
-    ).hide();
+    $(`#${section}-info-view, #${section}-settings-view`).hide();
 
     // Show edit form
-    $(
-      `#${section}-info-edit, #${section}-settings-edit, #ai-features-edit`
-    ).fadeIn();
+    $(`#${section}-info-edit, #${section}-settings-edit`).fadeIn();
   }
 
   /**
@@ -419,14 +415,10 @@
    */
   function hideEditForm(section) {
     // Hide edit form
-    $(
-      `#${section}-info-edit, #${section}-settings-edit, #ai-features-edit`
-    ).hide();
+    $(`#${section}-info-edit, #${section}-settings-edit`).hide();
 
     // Show view content
-    $(
-      `#${section}-info-view, #${section}-settings-view, #ai-features-view`
-    ).fadeIn();
+    $(`#${section}-info-view, #${section}-settings-view`).fadeIn();
   }
 
   /**
@@ -751,7 +743,7 @@
     var apiUrl =
       typeof voiceroConfig !== "undefined" && voiceroConfig.apiUrl
         ? voiceroConfig.apiUrl
-        : "https://www.voicero.ai/api";
+        : "https://56b2c4656c5a.ngrok-free.app/api";
 
     // Get access key from config
     var accessKey =
@@ -913,7 +905,8 @@
     if (websiteId) {
       // Set the subscription URL
       var subscriptionUrl =
-        "https://www.voicero.ai/app/websites/website?id=" + websiteId;
+        "https://56b2c4656c5a.ngrok-free.app/app/websites/website?id=" +
+        websiteId;
       $("#update-subscription-link").attr("href", subscriptionUrl);
     }
   }
@@ -1012,8 +1005,9 @@
 
       // ALWAYS create the button, even without websiteId
       var subscriptionUrl = websiteId
-        ? "https://www.voicero.ai/app/websites/website?id=" + websiteId
-        : "https://www.voicero.ai/app/websites";
+        ? "https://56b2c4656c5a.ngrok-free.app/app/websites/website?id=" +
+          websiteId
+        : "https://56b2c4656c5a.ngrok-free.app/app/websites";
 
       var button = $("<a></a>")
         .attr("href", subscriptionUrl)

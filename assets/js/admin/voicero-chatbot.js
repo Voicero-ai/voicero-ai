@@ -19,11 +19,223 @@
   // Flag to track if initialization has occurred
   let initialized = false;
 
+  // Form state variables
+  let formState = {
+    botName: "",
+    welcomeMessage: "",
+    customInstructions: "",
+    popUpQuestions: [],
+    primaryColor: "#008060",
+    colorHsb: { hue: 147, brightness: 0.5, saturation: 1 },
+    autoFeatures: {
+      allowAutoRedirect: false,
+      allowAutoScroll: false,
+      allowAutoHighlight: false,
+      allowAutoClick: false,
+      allowAutoCancel: false,
+      allowAutoReturn: false,
+      allowAutoExchange: false,
+      allowAutoGetUserOrders: false,
+      allowAutoUpdateUserInfo: false,
+      allowAutoFillForm: true,
+      allowAutoTrackOrder: true,
+      allowAutoLogout: true,
+      allowAutoLogin: true,
+      allowAutoGenerateImage: true,
+    },
+    showVoiceAI: true,
+    showTextAI: true,
+    showHome: true,
+    showNews: true,
+    showHelp: true,
+  };
+
+  // Validation errors
+  let validationErrors = {
+    botName: "",
+    welcomeMessage: "",
+    customInstructions: "",
+    popUpQuestions: "",
+  };
+
+  /**
+   * Utility function to normalize backend flags that may arrive as 1/0, "1"/"0", "true"/"false", or booleans
+   */
+  function toBoolean(value, defaultValue = false) {
+    if (value === undefined || value === null) return defaultValue;
+    if (typeof value === "boolean") return value;
+    if (typeof value === "number") return value === 1;
+    if (typeof value === "string") {
+      const v = value.trim().toLowerCase();
+      if (v === "true" || v === "1" || v === "yes" || v === "on") return true;
+      if (v === "false" || v === "0" || v === "no" || v === "off") return false;
+    }
+    return Boolean(value);
+  }
+
+  /**
+   * Utility function to count words in a string
+   */
+  function countWords(str) {
+    return str.trim().split(/\s+/).filter(Boolean).length;
+  }
+
+  /**
+   * Helper function to convert hex color to HSB
+   */
+  function hexToHsb(hex) {
+    // Remove the # if present
+    hex = hex.replace(/^#/, "");
+
+    // Parse the hex values to RGB
+    const r = parseInt(hex.substring(0, 2), 16) / 255;
+    const g = parseInt(hex.substring(2, 4), 16) / 255;
+    const b = parseInt(hex.substring(4, 6), 16) / 255;
+
+    // Find the maximum and minimum values to calculate saturation
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const delta = max - min;
+
+    // Calculate HSB values
+    let h = 0;
+    let s = max === 0 ? 0 : delta / max;
+    let br = max;
+
+    // Calculate hue
+    if (delta !== 0) {
+      if (max === r) {
+        h = ((g - b) / delta) % 6;
+      } else if (max === g) {
+        h = (b - r) / delta + 2;
+      } else {
+        h = (r - g) / delta + 4;
+      }
+
+      h = Math.round(h * 60);
+      if (h < 0) h += 360;
+    }
+
+    // Return HSB object
+    return {
+      hue: h,
+      saturation: s,
+      brightness: br,
+    };
+  }
+
+  /**
+   * Helper function to convert HSB to hex
+   */
+  function hsbToHex({ hue, saturation, brightness }) {
+    let h = hue / 360;
+    let s = saturation;
+    let v = brightness;
+
+    let r, g, b;
+
+    let i = Math.floor(h * 6);
+    let f = h * 6 - i;
+    let p = v * (1 - s);
+    let q = v * (1 - f * s);
+    let t = v * (1 - (1 - f) * s);
+
+    switch (i % 6) {
+      case 0:
+        r = v;
+        g = t;
+        b = p;
+        break;
+      case 1:
+        r = q;
+        g = v;
+        b = p;
+        break;
+      case 2:
+        r = p;
+        g = v;
+        b = t;
+        break;
+      case 3:
+        r = p;
+        g = q;
+        b = v;
+        break;
+      case 4:
+        r = t;
+        g = p;
+        b = v;
+        break;
+      case 5:
+        r = v;
+        g = p;
+        b = q;
+        break;
+    }
+
+    // Convert to hex
+    r = Math.round(r * 255)
+      .toString(16)
+      .padStart(2, "0");
+    g = Math.round(g * 255)
+      .toString(16)
+      .padStart(2, "0");
+    b = Math.round(b * 255)
+      .toString(16)
+      .padStart(2, "0");
+
+    return `#${r}${g}${b}`;
+  }
+
+  /**
+   * Parse color input string to hex. Accepts #RRGGBB, #RGB, rgb(r,g,b)
+   */
+  function parseColorInputToHex(input) {
+    if (!input) return null;
+    const value = String(input).trim();
+
+    // Hex full or short
+    if (/^#?[0-9a-fA-F]{6}$/.test(value)) {
+      return value.startsWith("#") ? value : `#${value}`;
+    }
+    if (/^#?[0-9a-fA-F]{3}$/.test(value)) {
+      const v = value.replace("#", "");
+      const r = v[0];
+      const g = v[1];
+      const b = v[2];
+      return `#${r}${r}${g}${g}${b}${b}`;
+    }
+
+    // rgb(r,g,b)
+    const rgbMatch = value
+      .replace(/\s+/g, "")
+      .match(/^rgb\((\d{1,3}),(\d{1,3}),(\d{1,3})\)$/i);
+    if (rgbMatch) {
+      const r = Math.max(0, Math.min(255, parseInt(rgbMatch[1], 10)));
+      const g = Math.max(0, Math.min(255, parseInt(rgbMatch[2], 10)));
+      const b = Math.max(0, Math.min(255, parseInt(rgbMatch[3], 10)));
+      const toHex = (n) => n.toString(16).padStart(2, "0");
+      return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    }
+
+    // Plain comma separated r,g,b
+    const parts = value.split(",");
+    if (parts.length === 3 && parts.every((p) => /^\d{1,3}$/.test(p.trim()))) {
+      const r = Math.max(0, Math.min(255, parseInt(parts[0].trim(), 10)));
+      const g = Math.max(0, Math.min(255, parseInt(parts[1].trim(), 10)));
+      const b = Math.max(0, Math.min(255, parseInt(parts[2].trim(), 10)));
+      const toHex = (n) => n.toString(16).padStart(2, "0");
+      return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    }
+
+    return null;
+  }
+
   /**
    * Main initialization function - we'll call this when document is ready
    * but delay the actual form setup until we have data
    */
-  function init() {
+  async function init() {
     // Override SVG icons immediately to ensure they're available
     overrideSvgIcons();
 
@@ -50,59 +262,164 @@
       </div>
     `);
 
-    // Check if we already have detailed data in window from voicero-main.js
-    if (
-      window.voiceroWebsiteData &&
-      window.voiceroWebsiteData.customInstructions
-    ) {
-      websiteData = window.voiceroWebsiteData;
+    // Fetch data using the proper API endpoints
+    try {
+      await fetchChatbotData();
       initChatbotPage();
-      return;
+    } catch (error) {
+      console.error("Error fetching chatbot data:", error);
+      $("#loading-indicator").html(`
+        <div style="text-align: center; padding: 20px;">
+          <p style="color: #d63638;">Failed to load chatbot settings: ${error.message}</p>
+          <button id="retry-load" class="button">Retry</button>
+        </div>
+      `);
+
+      $("#retry-load").on("click", function () {
+        location.reload();
+      });
+    }
+  }
+
+  /**
+   * Fetch chatbot data using the same pattern as React code
+   */
+  async function fetchChatbotData() {
+    const accessKey = $("#access-key").val() || window.voiceroAccessKey;
+
+    if (!accessKey) {
+      throw new Error("No access key found");
     }
 
-    // Set up direct communication with voicero-main.js
-    window.voiceroUpdateChatbotSettings = function (data) {
-      if (data && data.customInstructions) {
-        websiteData = data;
-        if (!initialized) {
-          initChatbotPage();
-        } else {
-          // Just update fields if already initialized
-          updateFormFieldsWithData(data);
-        }
+    // Step 1: Get basic website data from connect API
+    const connectResponse = await fetch(
+      `${window.voiceroApiUrl || "https://www.voicero.ai"}/api/connect`,
+      {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${accessKey}`,
+        },
       }
+    );
+
+    if (!connectResponse.ok) {
+      const responseText = await connectResponse.text();
+      console.error("Connect API Error:", connectResponse.status, responseText);
+      throw new Error(
+        `Failed to fetch website data: ${connectResponse.status} ${connectResponse.statusText}`
+      );
+    }
+
+    let connectData;
+    try {
+      connectData = await connectResponse.json();
+    } catch (error) {
+      console.error("Connect API returned invalid JSON:", error);
+      throw new Error("Connect API returned invalid response format");
+    }
+
+    console.log("Connect API Response:", connectData);
+
+    if (!connectData.website) {
+      throw new Error("No website data found in response");
+    }
+
+    const website = connectData.website;
+
+    // Step 2: Fetch interface settings using new API
+    const interfaceResponse = await fetch(
+      `https://www.voicero.ai/api/updateInterface/get?websiteId=${website.id}`,
+      {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${accessKey}`,
+        },
+      }
+    );
+
+    if (!interfaceResponse.ok) {
+      const responseText = await interfaceResponse.text();
+      console.error(
+        "Interface API Error:",
+        interfaceResponse.status,
+        responseText
+      );
+      throw new Error(
+        `Failed to fetch interface settings: ${interfaceResponse.status} ${interfaceResponse.statusText}`
+      );
+    }
+
+    let interfaceData;
+    try {
+      interfaceData = await interfaceResponse.json();
+    } catch (error) {
+      console.error("Interface API returned invalid JSON:", error);
+      throw new Error("Interface API returned invalid response format");
+    }
+
+    const site = interfaceData.website;
+
+    // Format popup questions properly
+    let formattedPopUpQuestions = [];
+    if (site.popUpQuestions && Array.isArray(site.popUpQuestions)) {
+      formattedPopUpQuestions = site.popUpQuestions.map((q) => ({
+        id: q.id,
+        question: q.question || "",
+        createdAt: q.createdAt,
+      }));
+    }
+
+    // Auto features normalized
+    const autoFeatures = {
+      allowAutoRedirect: toBoolean(site.allowAutoRedirect, false),
+      allowAutoScroll: toBoolean(site.allowAutoScroll, false),
+      allowAutoHighlight: toBoolean(site.allowAutoHighlight, false),
+      allowAutoClick: toBoolean(site.allowAutoClick, false),
+      allowAutoCancel: toBoolean(site.allowAutoCancel, false),
+      allowAutoReturn: toBoolean(site.allowAutoReturn, false),
+      allowAutoExchange: toBoolean(site.allowAutoExchange, false),
+      allowAutoGetUserOrders: toBoolean(site.allowAutoGetUserOrders, false),
+      allowAutoUpdateUserInfo: toBoolean(site.allowAutoUpdateUserInfo, false),
+      // Defaults true where UI indicates enabled-by-default
+      allowAutoFillForm: toBoolean(site.allowAutoFillForm, true),
+      allowAutoTrackOrder: toBoolean(site.allowAutoTrackOrder, true),
+      allowAutoLogout: toBoolean(site.allowAutoLogout, true),
+      allowAutoLogin: toBoolean(site.allowAutoLogin, true),
+      allowAutoGenerateImage: toBoolean(site.allowAutoGenerateImage, true),
     };
 
-    // Fallback: Also check for existing data in detailed response
-    if (
-      window.voiceroDetailedWebsiteResponse &&
-      window.voiceroDetailedWebsiteResponse.data &&
-      window.voiceroDetailedWebsiteResponse.data.customInstructions
-    ) {
-      websiteData = window.voiceroDetailedWebsiteResponse.data;
-      initChatbotPage();
-      return;
-    }
+    // Store the complete website data with interface settings
+    websiteData = {
+      // Basic website info
+      id: website.id,
+      name: website.name,
+      url: website.url,
+      monthlyQueries: website.monthlyQueries,
+      queryLimit: website.queryLimit,
+      renewsOn: website.renewsOn,
+      lastSyncedAt: website.lastSyncedAt,
 
-    // Add a modified version of the fetch hook to monitor the detailed data
-    monitorFetchRequests();
+      // Interface settings
+      customInstructions: site.customInstructions || "",
+      customWelcomeMessage: site.customWelcomeMessage || "",
+      popUpQuestions: formattedPopUpQuestions,
+      color: site.color || "#008060",
+      removeHighlight: false,
+      botName: site.botName || "AI Assistant",
+      autoFeatures,
+      showVoiceAI: toBoolean(site.showVoiceAI, true),
+      showTextAI: toBoolean(site.showTextAI, true),
+      showHome: toBoolean(site.showHome, true),
+      showNews: toBoolean(site.showNews, true),
+      showHelp: toBoolean(site.showHelp, true),
+    };
 
-    // Fallback: If no data after 3 seconds, init with whatever we have
-    setTimeout(function () {
-      if (!initialized) {
-        // Check one more time if data is available from voicero-main.js
-        if (
-          window.voiceroDetailedWebsiteResponse &&
-          window.voiceroDetailedWebsiteResponse.data &&
-          window.voiceroDetailedWebsiteResponse.data.customInstructions
-        ) {
-          websiteData = window.voiceroDetailedWebsiteResponse.data;
-          initChatbotPage();
-        } else {
-          initChatbotPage();
-        }
-      }
-    }, 5000);
+    // Store access key for later use
+    window.voiceroAccessKey = accessKey;
+
+    console.log("Complete website data:", websiteData);
   }
 
   /**
@@ -152,49 +469,6 @@
   }
 
   /**
-   * Monitor fetch requests to intercept the detailed website data
-   */
-  function monitorFetchRequests() {
-    var originalFetch = window.fetch;
-    window.fetch = function () {
-      var fetchResult = originalFetch.apply(this, arguments);
-
-      // Check if this is the detailed website data request
-      var url = arguments[0];
-      if (url && typeof url === "string" && url.includes("/api/websites/")) {
-        fetchResult.then((response) => {
-          if (response.ok) {
-            response
-              .clone()
-              .json()
-              .then((data) => {
-                if (data && data.success && data.data) {
-                  websiteData = data.data;
-
-                  // Store in global for potential reference by other scripts
-                  window.voiceroDetailedWebsiteResponse = data;
-
-                  // Initialize if not already done
-                  if (!initialized) {
-                    initChatbotPage();
-                  } else {
-                    // Just update fields if already initialized
-                    updateFormFieldsWithData(data.data);
-                  }
-                }
-              })
-              .catch((err) =>
-                console.error("Error parsing intercepted response:", err)
-              );
-          }
-        });
-      }
-
-      return fetchResult;
-    };
-  }
-
-  /**
    * Initialize the chatbot customization page
    */
   function initChatbotPage() {
@@ -207,22 +481,19 @@
     // Initialize form fields with data from API
     updateFormFieldsWithData(websiteData);
 
-    // Initialize word counters
+    // Initialize all form components
     initWordCounters();
-
-    // Initialize suggested questions
     initSuggestedQuestions();
-
-    // Initialize color picker
     initColorPicker();
-
-    // Initialize icon selectors
-    initIconSelectors();
+    initAutoFeatures();
+    initUIToggles();
 
     // Handle form submission
     $("#save-settings-btn").on("click", function () {
       saveSettings();
     });
+
+    console.log("Chatbot page initialized successfully");
   }
 
   /**
@@ -230,142 +501,259 @@
    * @param {Object} data - The website data
    */
   function updateFormFieldsWithData(data) {
-    // Set bot name
-    if (data.botName) {
-      $("#chatbot-name").val(data.botName);
+    // Update form state with data from API
+    formState.botName = data.botName || "Voicero AI";
+    formState.welcomeMessage = data.customWelcomeMessage || "";
+    formState.customInstructions = data.customInstructions || "";
+    formState.primaryColor = data.color || "#008060";
+    formState.colorHsb = hexToHsb(formState.primaryColor);
+
+    // Update auto features if they exist
+    if (data.autoFeatures) {
+      Object.keys(formState.autoFeatures).forEach((key) => {
+        if (data.autoFeatures.hasOwnProperty(key)) {
+          formState.autoFeatures[key] = toBoolean(
+            data.autoFeatures[key],
+            formState.autoFeatures[key]
+          );
+        }
+      });
     }
 
-    // Set welcome message
-    if (data.customWelcomeMessage) {
-      $("#welcome-message").val(data.customWelcomeMessage);
-      $("#welcome-message").trigger("input");
-    }
+    // Update UI toggles
+    formState.showVoiceAI = toBoolean(data.showVoiceAI, true);
+    formState.showTextAI = toBoolean(data.showTextAI, true);
+    formState.showHome = toBoolean(data.showHome, true);
+    formState.showNews = toBoolean(data.showNews, true);
+    formState.showHelp = toBoolean(data.showHelp, true);
 
-    // Set click message
-    if (data.clickMessage) {
-      $("#click-message").val(data.clickMessage);
-      $("#click-message").trigger("input");
-    }
-
-    // Set allow multi AI review
-    if (data.allowMultiAIReview !== undefined) {
-      $("#allow-multi-ai-review").prop("checked", data.allowMultiAIReview);
-    }
-
-    // Set custom instructions
-    if (data.customInstructions) {
-      $("#custom-instructions").val(data.customInstructions);
-      $("#custom-instructions").trigger("input");
-    }
-
-    // Set color
-    if (data.color) {
-      $("#primary-color").val(data.color);
-      $(".color-preview").css("background", data.color);
-      // Trigger color input to update the slider position
-      $("#primary-color").trigger("input");
-    }
-
-    // Set remove highlighting checkbox
-    if (data.removeHighlight !== undefined) {
-      $("#remove-highlighting").prop("checked", data.removeHighlight);
-    }
-
-    // Set icon selections
-    if (data.iconBot) {
-      // Map API icon names to select values
-      var botIconMap = {
-        BotIcon: "Bot",
-        VoiceIcon: "Voice",
-        MessageIcon: "Message",
-      };
-      var botIconValue = botIconMap[data.iconBot] || "Bot";
-      $("#bot-icon-type").val(botIconValue).trigger("change");
-    }
-
-    if (data.iconVoice) {
-      var voiceIconMap = {
-        MicrophoneIcon: "Microphone",
-        WaveformIcon: "Waveform",
-        SpeakerIcon: "Speaker",
-      };
-      var voiceIconValue = voiceIconMap[data.iconVoice] || "Microphone";
-      $("#voice-icon-type").val(voiceIconValue).trigger("change");
-    }
-
-    if (data.iconMessage) {
-      var messageIconMap = {
-        MessageIcon: "Message",
-        DocumentIcon: "Document",
-        CursorIcon: "Cursor",
-      };
-      var messageIconValue = messageIconMap[data.iconMessage] || "Message";
-      $("#message-icon-type").val(messageIconValue).trigger("change");
-    }
-
-    // Load suggested questions
+    // Update popup questions
     if (data.popUpQuestions && Array.isArray(data.popUpQuestions)) {
-      // Clear any existing questions
-      $("#suggested-questions-container").empty();
+      formState.popUpQuestions = data.popUpQuestions.map((q) => {
+        if (typeof q === "object" && q.question) {
+          return { id: q.id, question: q.question, createdAt: q.createdAt };
+        }
+        return { question: String(q) };
+      });
+    }
 
-      if (data.popUpQuestions.length === 0) {
-        $("#suggested-questions-container").append(
-          '<div class="no-questions">No suggested questions added yet.</div>'
-        );
-      } else {
-        // Add each question
-        data.popUpQuestions.forEach((question, index) => {
-          // Handle both string questions and object questions
-          var questionText =
-            typeof question === "object" ? question.question || "" : question;
+    // Update DOM elements
+    updateFormElementsFromState();
 
-          $("#suggested-questions-container").append(`
-            <div class="suggested-question-item" data-index="${index}">
-              <input type="text" name="suggested_questions[]" value="${questionText}" class="suggested-question-input">
-              <button type="button" class="remove-question-btn button-link">
-                <span class="dashicons dashicons-trash"></span>
-              </button>
-            </div>
-          `);
-        });
+    // Update website information section
+    updateWebsiteInformation();
+  }
 
-        // Update question count
-        $("#questions-count").text(data.popUpQuestions.length);
+  /**
+   * Update DOM elements based on current form state
+   */
+  function updateFormElementsFromState() {
+    // Update basic text fields
+    $("#chatbot-name").val(formState.botName);
+    $("#welcome-message").val(formState.welcomeMessage);
+    $("#custom-instructions").val(formState.customInstructions);
 
-        // Hide add container if we've reached the limit
-        if (data.popUpQuestions.length >= 3) {
-          $(".add-question-container").hide();
-        } else {
-          $(".add-question-container").show();
+    // Update color fields
+    $("#primary-color").val(formState.primaryColor);
+    $("#color-input").val(formState.primaryColor);
+    $(".color-preview").css("background-color", formState.primaryColor);
+
+    // Update auto features checkboxes
+    Object.keys(formState.autoFeatures).forEach((key) => {
+      $(
+        `#${key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`
+      ).prop("checked", formState.autoFeatures[key]);
+    });
+
+    // Update UI toggles
+    $("#show-voice-ai").prop("checked", formState.showVoiceAI);
+    $("#show-text-ai").prop("checked", formState.showTextAI);
+    $("#show-home").prop("checked", formState.showHome);
+    $("#show-news").prop("checked", formState.showNews);
+    $("#show-help").prop("checked", formState.showHelp);
+
+    // Update popup questions
+    updatePopupQuestionsDisplay();
+
+    // Trigger input events for word counters
+    $("#welcome-message, #custom-instructions").trigger("input");
+  }
+
+  /**
+   * Update website information display
+   */
+  function updateWebsiteInformation() {
+    if (websiteData) {
+      // Update website name
+      $(".info-value")
+        .eq(0)
+        .text(websiteData.name || "Not set");
+
+      // Update last synced date
+      let lastSyncedText = "Never";
+      if (websiteData.lastSyncedAt) {
+        try {
+          const lastSyncedDate = new Date(websiteData.lastSyncedAt);
+          lastSyncedText = lastSyncedDate.toLocaleString();
+        } catch (error) {
+          console.warn("Error parsing lastSyncedAt date:", error);
+          lastSyncedText = websiteData.lastSyncedAt;
         }
       }
+      $(".info-value").eq(1).text(lastSyncedText);
     }
   }
 
   /**
-   * Initialize word counters for text areas
+   * Update popup questions display
+   */
+  function updatePopupQuestionsDisplay() {
+    const container = $("#suggested-questions-container");
+    container.empty();
+
+    if (formState.popUpQuestions.length === 0) {
+      container.append(
+        '<div class="no-questions">No suggested questions added yet.</div>'
+      );
+    } else {
+      formState.popUpQuestions.forEach((question, index) => {
+        const questionText =
+          typeof question === "object" ? question.question || "" : question;
+        container.append(`
+          <div class="suggested-question-item" data-index="${index}">
+            <input type="text" name="suggested_questions[]" value="${questionText}" class="suggested-question-input" readonly>
+            <button type="button" class="remove-question-btn button-link" data-index="${index}">
+              <span class="dashicons dashicons-trash"></span>
+            </button>
+          </div>
+        `);
+      });
+    }
+
+    // Update question count
+    $("#questions-count").text(formState.popUpQuestions.length);
+
+    // Show/hide add container based on limit
+    if (formState.popUpQuestions.length >= 3) {
+      $(".add-question-container").hide();
+    } else {
+      $(".add-question-container").show();
+    }
+  }
+
+  /**
+   * Initialize word counters and validation for text areas
    */
   function initWordCounters() {
-    // Welcome message word counter
+    // Bot name validation (character count)
+    $("#chatbot-name").on("input", function () {
+      const value = $(this).val();
+      formState.botName = value;
+      validateBotName(value);
+    });
+
+    // Welcome message word counter and validation
     $("#welcome-message")
       .on("input", function () {
+        const value = $(this).val();
+        formState.welcomeMessage = value;
         updateWordCount($(this), $("#welcome-message-count"), 25);
+        validateWelcomeMessage(value);
       })
       .trigger("input");
 
-    // Click message word counter
-    $("#click-message")
-      .on("input", function () {
-        updateWordCount($(this), $("#click-message-count"), 25);
-      })
-      .trigger("input");
-
-    // Custom instructions word counter
+    // Custom instructions word counter and validation
     $("#custom-instructions")
       .on("input", function () {
+        const value = $(this).val();
+        formState.customInstructions = value;
         updateWordCount($(this), $("#custom-instructions-count"), 50);
+        validateCustomInstructions(value);
       })
       .trigger("input");
+  }
+
+  /**
+   * Validation functions
+   */
+  function validateBotName(value) {
+    const chars = value.length;
+    const errorElement = $("#chatbot-name-error");
+
+    if (chars > 120) {
+      validationErrors.botName = "Bot name cannot be more than 120 characters";
+      errorElement.text(validationErrors.botName).show();
+      return false;
+    }
+
+    validationErrors.botName = "";
+    errorElement.hide();
+    return true;
+  }
+
+  function validateWelcomeMessage(value) {
+    const words = countWords(value);
+    const errorElement = $("#welcome-message-error");
+
+    if (words > 25) {
+      validationErrors.welcomeMessage =
+        "Welcome message cannot be more than 25 words";
+      errorElement.text(validationErrors.welcomeMessage).show();
+      return false;
+    }
+
+    validationErrors.welcomeMessage = "";
+    errorElement.hide();
+    return true;
+  }
+
+  function validateCustomInstructions(value) {
+    const words = countWords(value);
+    const errorElement = $("#custom-instructions-error");
+
+    if (words > 50) {
+      validationErrors.customInstructions =
+        "Custom instructions cannot be more than 50 words";
+      errorElement.text(validationErrors.customInstructions).show();
+      return false;
+    }
+
+    validationErrors.customInstructions = "";
+    errorElement.hide();
+    return true;
+  }
+
+  function validatePopupQuestions() {
+    const errorElement = $("#popup-questions-error");
+
+    if (formState.popUpQuestions.length > 3) {
+      validationErrors.popUpQuestions =
+        "You can only have up to 3 popup questions";
+      errorElement.text(validationErrors.popUpQuestions).show();
+      return false;
+    }
+
+    validationErrors.popUpQuestions = "";
+    errorElement.hide();
+    return true;
+  }
+
+  /**
+   * Validate entire form
+   */
+  function validateForm() {
+    const isNameValid = formState.botName
+      ? validateBotName(formState.botName)
+      : true;
+    const isWelcomeValid = validateWelcomeMessage(formState.welcomeMessage);
+    const isInstructionsValid = validateCustomInstructions(
+      formState.customInstructions
+    );
+    const areQuestionsValid = validatePopupQuestions();
+
+    return (
+      isNameValid && isWelcomeValid && isInstructionsValid && areQuestionsValid
+    );
   }
 
   /**
@@ -409,7 +797,8 @@
       "click",
       ".remove-question-btn",
       function () {
-        removeSuggestedQuestion($(this).closest(".suggested-question-item"));
+        const index = parseInt($(this).attr("data-index"), 10);
+        removeSuggestedQuestion(index);
       }
     );
   }
@@ -417,219 +806,232 @@
   /**
    * Add a new suggested question
    */
-  function addSuggestedQuestion() {
-    var newQuestion = $("#new-question").val().trim();
+  async function addSuggestedQuestion() {
+    const newQuestion = $("#new-question").val().trim();
 
     if (!newQuestion) {
       return;
     }
 
-    // Get current question count
-    var currentCount = parseInt($("#questions-count").text(), 10);
-
     // Check if we've reached the limit
-    if (currentCount >= 3) {
+    if (formState.popUpQuestions.length >= 3) {
+      showErrorMessage("You can only have up to 3 popup questions");
       return;
     }
 
-    // Remove "no questions" message if it exists
-    $(".no-questions").remove();
+    try {
+      // Get access key from hidden field or global
+      const accessKey = $("#access-key").val() || window.voiceroAccessKey;
+      const websiteId =
+        $("#website-id").val() || (websiteData && websiteData.id);
 
-    // Create new question element
-    var questionIndex = $(".suggested-question-item").length;
-    var $questionItem = $(`
-            <div class="suggested-question-item" data-index="${questionIndex}">
-                <input type="text" name="suggested_questions[]" value="${newQuestion}" class="suggested-question-input">
-                <button type="button" class="remove-question-btn button-link">
-                    <span class="dashicons dashicons-trash"></span>
-                </button>
-            </div>
-        `);
+      if (!accessKey || !websiteId) {
+        throw new Error("Missing access key or website ID");
+      }
 
-    // Add to container
-    $("#suggested-questions-container").append($questionItem);
+      // Call API to add question
+      const response = await fetch(
+        "https://56b2c4656c5a.ngrok-free.app/api/updateInterface/addQuestion",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${accessKey}`,
+          },
+          body: JSON.stringify({
+            websiteId: websiteId,
+            question: newQuestion,
+          }),
+        }
+      );
 
-    // Clear input
-    $("#new-question").val("").focus();
+      const data = await response.json();
 
-    // Update counter
-    var newCount = currentCount + 1;
-    $("#questions-count").text(newCount);
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to add question");
+      }
 
-    // Hide add container if we've reached the limit
-    if (newCount >= 3) {
-      $(".add-question-container").hide();
+      // Add to form state
+      formState.popUpQuestions.push({
+        id: data.id,
+        question: newQuestion,
+        createdAt: new Date().toISOString(),
+      });
+
+      // Clear input
+      $("#new-question").val("");
+
+      // Update display
+      updatePopupQuestionsDisplay();
+      validatePopupQuestions();
+
+      showSuccessMessage("Question added successfully");
+    } catch (error) {
+      console.error("Error adding question:", error);
+      showErrorMessage("Failed to add question: " + error.message);
     }
   }
 
   /**
    * Remove a suggested question
-   * @param {Object} $questionItem - The question item jQuery object
+   * @param {number} indexToRemove - The index of the question to remove
    */
-  function removeSuggestedQuestion($questionItem) {
-    // Remove the item
-    $questionItem.remove();
+  async function removeSuggestedQuestion(indexToRemove) {
+    const question = formState.popUpQuestions[indexToRemove];
 
-    // Update indices for remaining items
-    $(".suggested-question-item").each(function (index) {
-      $(this).attr("data-index", index);
-    });
-
-    // Update counter
-    var newCount = $(".suggested-question-item").length;
-    $("#questions-count").text(newCount);
-
-    // Show add container if we're below the limit
-    if (newCount < 3) {
-      $(".add-question-container").show();
+    if (!question) {
+      return;
     }
 
-    // Show "no questions" message if no questions left
-    if (newCount === 0) {
-      $("#suggested-questions-container").append(
-        '<div class="no-questions">No suggested questions added yet.</div>'
-      );
+    try {
+      // If question has an ID, call API to delete it
+      if (question.id) {
+        const accessKey = $("#access-key").val() || window.voiceroAccessKey;
+        const websiteId =
+          $("#website-id").val() || (websiteData && websiteData.id);
+
+        if (!accessKey || !websiteId) {
+          throw new Error("Missing access key or website ID");
+        }
+
+        const response = await fetch(
+          "https://56b2c4656c5a.ngrok-free.app/api/updateInterface/deleteQuestion",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              Authorization: `Bearer ${accessKey}`,
+            },
+            body: JSON.stringify({
+              websiteId: websiteId,
+              id: question.id,
+            }),
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || "Failed to delete question");
+        }
+      }
+
+      // Remove from form state
+      formState.popUpQuestions.splice(indexToRemove, 1);
+
+      // Update display
+      updatePopupQuestionsDisplay();
+      validatePopupQuestions();
+
+      showSuccessMessage("Question removed successfully");
+    } catch (error) {
+      console.error("Error removing question:", error);
+      showErrorMessage("Failed to remove question: " + error.message);
     }
   }
 
   /**
-   * Initialize the color picker
+   * Initialize the color picker and related inputs
    */
   function initColorPicker() {
-    // Check if color picker container exists
-    var $colorPicker = $("#color-picker");
-    if ($colorPicker.length === 0) return;
-
-    // Load saved color or use default - prefer API data if available
-    var savedColor =
-      $("#primary-color").val() || websiteData.color || "#6366F1";
-
-    // Create a better color picker using div gradient
-    $colorPicker.css({
-      background:
-        "linear-gradient(to right, red, yellow, lime, cyan, blue, magenta, red)",
-      height: "20px",
-      width: "100%",
-      "max-width": "300px",
-      position: "relative",
-      cursor: "pointer",
-      "border-radius": "3px",
-      "margin-bottom": "10px",
-    });
-
-    // Add color selector handle
-    var $colorHandle = $('<div class="color-handle"></div>').css({
-      position: "absolute",
-      width: "10px",
-      height: "26px",
-      border: "2px solid white",
-      "box-shadow": "0 0 2px rgba(0,0,0,0.5)",
-      "border-radius": "3px",
-      top: "-3px",
-      transform: "translateX(-50%)",
-      background: savedColor,
-    });
-
-    $colorPicker.append($colorHandle);
-
-    // Calculate position based on color
-    let initialPosition = 66.67; // Default position (blue-ish)
-
-    // Try to estimate position from hex color
-    if (savedColor.startsWith("#")) {
-      try {
-        initialPosition = estimatePositionFromColor(savedColor) || 66.67;
-      } catch (e) {
-        console.warn("Error calculating color position:", e);
-        // Use default position
-        initialPosition = 66.67;
-      }
-    }
-
-    // Set handle position
-    $colorHandle.css("left", initialPosition + "%");
-
-    // Handle click and drag on color picker
-    $colorPicker.on("click", function (e) {
-      var position =
-        ((e.pageX - $colorPicker.offset().left) / $colorPicker.width()) * 100;
-      updateColorPickerHandle(position);
-    });
-
-    let isDragging = false;
-
-    $colorHandle.on("mousedown", function () {
-      isDragging = true;
-    });
-
-    $(document).on("mousemove", function (e) {
-      if (!isDragging) return;
-
-      var position =
-        ((e.pageX - $colorPicker.offset().left) / $colorPicker.width()) * 100;
-      updateColorPickerHandle(position);
-    });
-
-    $(document).on("mouseup", function () {
-      isDragging = false;
-    });
-
-    // Set initial color to input
-    $("#primary-color").val(savedColor);
-
-    // Handle direct input of color
+    // Initialize HTML5 color input
     $("#primary-color").on("input", function () {
-      var inputColor = $(this).val();
+      const colorValue = $(this).val();
+      formState.primaryColor = colorValue;
+      formState.colorHsb = hexToHsb(colorValue);
 
-      // Validate the color (basic validation)
-      if (/^#[0-9A-F]{6}$/i.test(inputColor)) {
-        // Update the preview
-        $(".color-preview").css("background", inputColor);
-        $colorHandle.css("background", inputColor);
+      // Update other color inputs and preview
+      $("#color-input").val(colorValue);
+      $(".color-preview").css("background-color", colorValue);
+    });
 
-        // Try to update the position of the handle
-        try {
-          var position = estimatePositionFromColor(inputColor);
-          if (position !== null) {
-            $colorHandle.css("left", position + "%");
-          }
-        } catch (e) {
-          console.warn("Error updating color handle position:", e);
-        }
+    // Initialize text color input (supports multiple formats)
+    $("#color-input").on("input", function () {
+      const inputValue = $(this).val();
+      const hexColor = parseColorInputToHex(inputValue);
+
+      if (hexColor) {
+        formState.primaryColor = hexColor;
+        formState.colorHsb = hexToHsb(hexColor);
+
+        // Update color picker and preview
+        $("#primary-color").val(hexColor);
+        $(".color-preview").css("background-color", hexColor);
       }
     });
 
-    // Update on blur even if not a perfect hex
-    $("#primary-color").on("blur", function () {
-      let inputColor = $(this).val();
+    // Initialize preset color buttons if they exist
+    $(".color-preset").on("click", function () {
+      const presetColor = $(this).data("color");
+      if (presetColor) {
+        formState.primaryColor = presetColor;
+        formState.colorHsb = hexToHsb(presetColor);
 
-      // Add # if missing
-      if (inputColor.charAt(0) !== "#") {
-        inputColor = "#" + inputColor;
+        // Update all color inputs and preview
+        $("#primary-color").val(presetColor);
+        $("#color-input").val(presetColor);
+        $(".color-preview").css("background-color", presetColor);
       }
+    });
 
-      // Force 6 characters
-      if (/^#[0-9A-F]{3}$/i.test(inputColor)) {
-        // Convert 3-char hex to 6-char
-        inputColor =
-          "#" +
-          inputColor[1] +
-          inputColor[1] +
-          inputColor[2] +
-          inputColor[2] +
-          inputColor[3] +
-          inputColor[3];
-      }
+    // Set initial color values
+    $("#primary-color").val(formState.primaryColor);
+    $("#color-input").val(formState.primaryColor);
+    $(".color-preview").css("background-color", formState.primaryColor);
+  }
 
-      // If still not valid, revert to saved
-      if (!/^#[0-9A-F]{6}$/i.test(inputColor)) {
-        inputColor = savedColor;
-      }
+  /**
+   * Initialize auto features checkboxes
+   */
+  function initAutoFeatures() {
+    Object.keys(formState.autoFeatures).forEach((key) => {
+      const checkboxId = `#${key.replace(
+        /[A-Z]/g,
+        (letter) => `-${letter.toLowerCase()}`
+      )}`;
 
-      // Update input and preview
-      $(this).val(inputColor);
-      $(".color-preview").css("background", inputColor);
-      $colorHandle.css("background", inputColor);
+      $(checkboxId).on("change", function () {
+        formState.autoFeatures[key] = $(this).is(":checked");
+      });
+    });
+  }
+
+  /**
+   * Initialize UI toggles
+   */
+  function initUIToggles() {
+    // Voice AI and Text AI toggles
+    $("#show-voice-ai").on("change", function () {
+      formState.showVoiceAI = $(this).is(":checked");
+    });
+
+    $("#show-text-ai").on("change", function () {
+      formState.showTextAI = $(this).is(":checked");
+    });
+
+    // Activate All toggle for AI UI
+    $("#activate-all-ai").on("change", function () {
+      const isChecked = $(this).is(":checked");
+      formState.showVoiceAI = isChecked;
+      formState.showTextAI = isChecked;
+
+      $("#show-voice-ai").prop("checked", isChecked);
+      $("#show-text-ai").prop("checked", isChecked);
+    });
+
+    // Bottom navigation toggles
+    $("#show-home").on("change", function () {
+      formState.showHome = $(this).is(":checked");
+    });
+
+    $("#show-news").on("change", function () {
+      formState.showNews = $(this).is(":checked");
+    });
+
+    $("#show-help").on("change", function () {
+      formState.showHelp = $(this).is(":checked");
     });
   }
 
@@ -765,70 +1167,9 @@
   }
 
   /**
-   * Initialize icon selectors
+   * Save settings via API
    */
-  function initIconSelectors() {
-    // Bot icon selector
-    $("#bot-icon-type")
-      .on("change", function () {
-        updateIconPreview($(this), $(".bot-icon"), "bot");
-      })
-      .trigger("change");
-
-    // Voice icon selector
-    $("#voice-icon-type")
-      .on("change", function () {
-        updateIconPreview($(this), $(".voice-icon"), "voice");
-      })
-      .trigger("change");
-
-    // Message icon selector
-    $("#message-icon-type")
-      .on("change", function () {
-        updateIconPreview($(this), $(".message-icon"), "message");
-      })
-      .trigger("change");
-  }
-
-  /**
-   * Update icon preview based on selection
-   * @param {Object} $select - The select element jQuery object
-   * @param {Object} $preview - The preview element jQuery object
-   * @param {string} iconType - The type of icon (bot, voice, message)
-   */
-  function updateIconPreview($select, $preview, iconType) {
-    var selectedValue = $select.val();
-
-    // Add debug info directly to preview
-    var debugInfo = $(
-      `<div class="icon-debug" style="font-size: 10px; margin-top: 5px; color: #666; max-width: 150px;"></div>`
-    );
-    $preview.parent().find(".icon-debug").remove();
-    $preview.after(debugInfo);
-
-    // Try different variations of the icon name
-    var iconKey = selectedValue;
-    var iconKeyLower = selectedValue.toLowerCase();
-
-    // First try exact match, then lowercase
-    if (svgIcons && svgIcons[iconKey]) {
-      $preview.html(svgIcons[iconKey]);
-    } else if (svgIcons && svgIcons[iconKeyLower]) {
-      $preview.html(svgIcons[iconKeyLower]);
-    } else {
-      // Fallback to a basic icon if SVG not found
-      console.warn(
-        `SVG icon not found for ${selectedValue} (tried ${iconKey}, ${iconKeyLower})`
-      );
-      $preview.html('<span class="dashicons dashicons-admin-generic"></span>');
-      debugInfo.append(`<br>Not found! Using fallback.`);
-    }
-  }
-
-  /**
-   * Save settings via AJAX
-   */
-  function saveSettings() {
+  async function saveSettings() {
     // Show saving indicator
     showSavingIndicator();
 
@@ -838,105 +1179,99 @@
       return;
     }
 
-    // Get form data
-    var formData = {
-      websiteId: $("#website-id").val(),
-      chatbot_name: $("#chatbot-name").val(),
-      welcome_message: $("#welcome-message").val(),
-      click_message: $("#click-message").val(),
-      allow_multi_ai_review: $("#allow-multi-ai-review").is(":checked") ? 1 : 0,
-      custom_instructions: $("#custom-instructions").val(),
-      primary_color: $("#primary-color").val(),
-      remove_highlighting: $("#remove-highlighting").is(":checked") ? 1 : 0,
-      bot_icon_type: $("#bot-icon-type").val(),
-      voice_icon_type: $("#voice-icon-type").val(),
-      message_icon_type: $("#message-icon-type").val(),
-      suggested_questions: [],
-    };
+    try {
+      // Get access key and website ID
+      const accessKey = $("#access-key").val() || window.voiceroAccessKey;
+      const websiteId =
+        $("#website-id").val() || (websiteData && websiteData.id);
 
-    // Get suggested questions
-    $(".suggested-question-input").each(function () {
-      formData.suggested_questions.push($(this).val());
-    });
+      if (!accessKey || !websiteId) {
+        throw new Error("Missing access key or website ID");
+      }
 
-    // Get the nonce value directly from the form
-    var nonce = $("#voicero_chatbot_nonce").val();
+      // Prepare data for interface API (matching the React structure)
+      const updateData = {
+        websiteId: websiteId,
+        botName: formState.botName,
+        customWelcomeMessage: formState.welcomeMessage,
+        customInstructions: formState.customInstructions,
+        color: formState.primaryColor,
+        showVoiceAI: formState.showVoiceAI,
+        showTextAI: formState.showTextAI,
+        showHome: formState.showHome,
+        showNews: formState.showNews,
+        showHelp: formState.showHelp,
 
-    // Make sure nonce exists
-    if (!nonce) {
-      showErrorMessage(
-        "Security token missing. Please refresh the page and try again."
-      );
-      hideSavingIndicator();
-      return;
-    }
+        // Auto features
+        allowAutoRedirect: formState.autoFeatures.allowAutoRedirect,
+        allowAutoScroll: formState.autoFeatures.allowAutoScroll,
+        allowAutoHighlight: formState.autoFeatures.allowAutoHighlight,
+        allowAutoClick: formState.autoFeatures.allowAutoClick,
+        allowAutoCancel: formState.autoFeatures.allowAutoCancel,
+        allowAutoReturn: formState.autoFeatures.allowAutoReturn,
+        allowAutoExchange: formState.autoFeatures.allowAutoExchange,
+        allowAutoGetUserOrders: formState.autoFeatures.allowAutoGetUserOrders,
+        allowAutoUpdateUserInfo: formState.autoFeatures.allowAutoUpdateUserInfo,
+        allowAutoFillForm: formState.autoFeatures.allowAutoFillForm,
+        allowAutoTrackOrder: formState.autoFeatures.allowAutoTrackOrder,
+        allowAutoLogout: formState.autoFeatures.allowAutoLogout,
+        allowAutoLogin: formState.autoFeatures.allowAutoLogin,
+        allowAutoGenerateImage: formState.autoFeatures.allowAutoGenerateImage,
+      };
 
-    // Send AJAX request to our proxy endpoint
-    $.ajax({
-      url: ajaxurl, // Use WordPress global ajaxurl
-      type: "POST",
-      data: {
-        action: "voicero_save_chatbot_settings_proxy", // Use our new proxy endpoint
-        nonce: nonce, // Pass the nonce properly
-        settings: formData,
-      },
-      success: function (response) {
-        hideSavingIndicator();
-        if (response.success) {
-          // Update the website data with the new values
-          if (websiteData) {
-            websiteData.botName = formData.chatbot_name;
-            websiteData.customWelcomeMessage = formData.welcome_message;
-            websiteData.clickMessage = formData.click_message;
-            websiteData.allowMultiAIReview =
-              formData.allow_multi_ai_review === 1;
-            websiteData.customInstructions = formData.custom_instructions;
-            websiteData.color = formData.primary_color;
-            websiteData.removeHighlight = formData.remove_highlighting === 1;
-            websiteData.popUpQuestions = formData.suggested_questions;
+      console.log("Saving chatbot settings:", updateData);
 
-            // Map icon types to API format
-            var botIconMap = {
-              Bot: "BotIcon",
-              Voice: "VoiceIcon",
-              Message: "MessageIcon",
-            };
-
-            var voiceIconMap = {
-              Microphone: "MicrophoneIcon",
-              Waveform: "WaveformIcon",
-              Speaker: "SpeakerIcon",
-            };
-
-            var messageIconMap = {
-              Message: "MessageIcon",
-              Document: "DocumentIcon",
-              Cursor: "CursorIcon",
-            };
-
-            websiteData.iconBot =
-              botIconMap[formData.bot_icon_type] || "BotIcon";
-            websiteData.iconVoice =
-              voiceIconMap[formData.voice_icon_type] || "MicrophoneIcon";
-            websiteData.iconMessage =
-              messageIconMap[formData.message_icon_type] || "MessageIcon";
-          }
-
-          showSuccessMessage("Chatbot settings saved successfully.");
-        } else {
-          showErrorMessage(
-            response.data?.message || "An error occurred while saving settings."
-          );
+      // Make API call to save interface settings
+      const response = await fetch(
+        "https://56b2c4656c5a.ngrok-free.app/api/updateInterface/edit",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${accessKey}`,
+          },
+          body: JSON.stringify(updateData),
         }
-      },
-      error: function (xhr, status, error) {
-        hideSavingIndicator();
-        console.error("AJAX Error:", xhr, status, error);
-        showErrorMessage(
-          "An error occurred while saving settings. Please try again."
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.error || errorData.message || "Failed to update settings"
         );
-      },
-    });
+      }
+
+      // Get the response data
+      const data = await response.json();
+      console.log("API response:", data);
+
+      // Update websiteData with new values
+      if (websiteData) {
+        Object.assign(websiteData, {
+          botName: formState.botName,
+          customWelcomeMessage: formState.welcomeMessage,
+          customInstructions: formState.customInstructions,
+          color: formState.primaryColor,
+          showVoiceAI: formState.showVoiceAI,
+          showTextAI: formState.showTextAI,
+          showHome: formState.showHome,
+          showNews: formState.showNews,
+          showHelp: formState.showHelp,
+          autoFeatures: { ...formState.autoFeatures },
+          popUpQuestions: [...formState.popUpQuestions],
+        });
+      }
+
+      showSuccessMessage(
+        "Chatbot settings and auto features saved successfully!"
+      );
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      showErrorMessage("Failed to save settings: " + error.message);
+    } finally {
+      hideSavingIndicator();
+    }
   }
 
   /**
@@ -944,28 +1279,30 @@
    * @returns {boolean} Is valid
    */
   function validateForm() {
-    // Check required fields
-    if (!$("#chatbot-name").val().trim()) {
-      showErrorMessage("Chatbot Name is required.");
-      return false;
-    }
-
     // Check word limits
-    var welcomeMessage = $("#welcome-message").val().trim();
-    if (welcomeMessage && welcomeMessage.split(/\s+/).length > 25) {
+    const welcomeMessage = $("#welcome-message").val();
+    if (
+      welcomeMessage &&
+      welcomeMessage.trim() &&
+      countWords(welcomeMessage.trim()) > 25
+    ) {
       showErrorMessage("Welcome Message exceeds the 25 word limit.");
       return false;
     }
 
-    var clickMessage = $("#click-message").val().trim();
-    if (clickMessage && clickMessage.split(/\s+/).length > 25) {
-      showErrorMessage("Click Message exceeds the 25 word limit.");
+    const customInstructions = $("#custom-instructions").val();
+    if (
+      customInstructions &&
+      customInstructions.trim() &&
+      countWords(customInstructions.trim()) > 50
+    ) {
+      showErrorMessage("Custom Instructions exceeds the 50 word limit.");
       return false;
     }
 
-    var customInstructions = $("#custom-instructions").val().trim();
-    if (customInstructions && customInstructions.split(/\s+/).length > 50) {
-      showErrorMessage("Custom Instructions exceeds the 50 word limit.");
+    // Check popup questions limit
+    if (formState.popUpQuestions.length > 3) {
+      showErrorMessage("You can only have up to 3 popup questions.");
       return false;
     }
 
@@ -993,36 +1330,83 @@
   }
 
   /**
-   * Show a success message
+   * Show a success message (toast-like notification)
    * @param {string} message - The success message
    */
   function showSuccessMessage(message) {
-    var $notice = $(
-      '<div class="notice notice-success is-dismissible"><p>' +
-        message +
-        "</p></div>"
-    );
-    $("#voicero-settings-message").html($notice);
+    // Remove existing notices
+    $(".voicero-toast").remove();
+
+    // Create toast notification
+    const $toast = $(`
+      <div class="voicero-toast voicero-toast-success">
+        <div class="voicero-toast-content">
+          <span class="dashicons dashicons-yes-alt"></span>
+          <span class="voicero-toast-message">${message}</span>
+          <button type="button" class="voicero-toast-close" aria-label="Dismiss">
+            <span class="dashicons dashicons-dismiss"></span>
+          </button>
+        </div>
+      </div>
+    `);
+
+    // Add to page
+    $("body").append($toast);
+
+    // Show with animation
+    setTimeout(() => $toast.addClass("voicero-toast-show"), 100);
+
+    // Handle close button
+    $toast.find(".voicero-toast-close").on("click", function () {
+      $toast.removeClass("voicero-toast-show");
+      setTimeout(() => $toast.remove(), 300);
+    });
 
     // Auto-dismiss after 5 seconds
     setTimeout(function () {
-      $notice.fadeOut(function () {
-        $(this).remove();
-      });
+      $toast.removeClass("voicero-toast-show");
+      setTimeout(() => $toast.remove(), 300);
     }, 5000);
   }
 
   /**
-   * Show an error message
+   * Show an error message (toast-like notification)
    * @param {string} message - The error message
    */
   function showErrorMessage(message) {
-    var $notice = $(
-      '<div class="notice notice-error is-dismissible"><p>' +
-        message +
-        "</p></div>"
-    );
-    $("#voicero-settings-message").html($notice);
+    // Remove existing notices
+    $(".voicero-toast").remove();
+
+    // Create toast notification
+    const $toast = $(`
+      <div class="voicero-toast voicero-toast-error">
+        <div class="voicero-toast-content">
+          <span class="dashicons dashicons-warning"></span>
+          <span class="voicero-toast-message">${message}</span>
+          <button type="button" class="voicero-toast-close" aria-label="Dismiss">
+            <span class="dashicons dashicons-dismiss"></span>
+          </button>
+        </div>
+      </div>
+    `);
+
+    // Add to page
+    $("body").append($toast);
+
+    // Show with animation
+    setTimeout(() => $toast.addClass("voicero-toast-show"), 100);
+
+    // Handle close button
+    $toast.find(".voicero-toast-close").on("click", function () {
+      $toast.removeClass("voicero-toast-show");
+      setTimeout(() => $toast.remove(), 300);
+    });
+
+    // Auto-dismiss after 8 seconds (longer for errors)
+    setTimeout(function () {
+      $toast.removeClass("voicero-toast-show");
+      setTimeout(() => $toast.remove(), 300);
+    }, 8000);
   }
 
   // Initialize when the DOM is ready
@@ -1262,6 +1646,136 @@
                 
                 .checkbox-field input[type="checkbox"] {
                     margin-top: 3px;
+                    margin-right: 8px;
+                }
+
+                /* Toast Notifications */
+                .voicero-toast {
+                    position: fixed;
+                    top: 32px;
+                    right: 20px;
+                    z-index: 100000;
+                    max-width: 400px;
+                    border-radius: 4px;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                    opacity: 0;
+                    transform: translateX(100%);
+                    transition: all 0.3s ease-in-out;
+                }
+
+                .voicero-toast.voicero-toast-show {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+
+                .voicero-toast-success {
+                    background-color: #d4edda;
+                    border-left: 4px solid #28a745;
+                    color: #155724;
+                }
+
+                .voicero-toast-error {
+                    background-color: #f8d7da;
+                    border-left: 4px solid #dc3545;
+                    color: #721c24;
+                }
+
+                .voicero-toast-content {
+                    display: flex;
+                    align-items: center;
+                    padding: 12px 16px;
+                    gap: 8px;
+                }
+
+                .voicero-toast-message {
+                    flex-grow: 1;
+                    font-weight: 500;
+                }
+
+                .voicero-toast-close {
+                    background: none;
+                    border: none;
+                    cursor: pointer;
+                    padding: 2px;
+                    opacity: 0.7;
+                }
+
+                .voicero-toast-close:hover {
+                    opacity: 1;
+                }
+
+                .voicero-toast .dashicons {
+                    width: 18px;
+                    height: 18px;
+                    font-size: 18px;
+                }
+
+                /* Form Validation Errors */
+                .voicero-form-error {
+                    color: #d63638;
+                    font-size: 12px;
+                    margin-top: 4px;
+                    display: none;
+                }
+
+                /* Improved form styling */
+                .form-field {
+                    position: relative;
+                    margin-bottom: 20px;
+                }
+
+                .form-field input[type="text"],
+                .form-field input[type="color"],
+                .form-field textarea,
+                .form-field select {
+                    border: 1px solid #ddd;
+                    border-radius: 3px;
+                    padding: 8px 12px;
+                    font-size: 14px;
+                    transition: border-color 0.2s;
+                }
+
+                .form-field input[type="text"]:focus,
+                .form-field input[type="color"]:focus,
+                .form-field textarea:focus,
+                .form-field select:focus {
+                    border-color: #2271b1;
+                    outline: none;
+                    box-shadow: 0 0 0 1px #2271b1;
+                }
+
+                .color-preview {
+                    width: 30px;
+                    height: 30px;
+                    border-radius: 4px;
+                    border: 1px solid #ddd;
+                    display: inline-block;
+                    vertical-align: middle;
+                    margin-left: 10px;
+                }
+
+                /* Auto features grid */
+                .auto-features-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                    gap: 15px;
+                    margin-top: 15px;
+                }
+
+                .auto-feature-item {
+                    padding: 10px;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 4px;
+                    background-color: #f9f9f9;
+                }
+
+                .auto-feature-item label {
+                    display: flex;
+                    align-items: center;
+                    cursor: pointer;
+                }
+
+                .auto-feature-item input[type="checkbox"] {
                     margin-right: 8px;
                 }
             </style>

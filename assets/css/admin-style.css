@@ -99,3 +99,1113 @@
 .content-section.active {
   display: block;
 }
+
+/* News Interface Styles */
+.voicero-news-page {
+  max-width: 100%;
+}
+
+.voicero-news-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.voicero-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.voicero-header-card {
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  border: 1px solid #e2e8f0;
+}
+
+.voicero-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.voicero-header-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.voicero-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.voicero-icon-blue {
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  color: white;
+}
+
+.voicero-icon-purple {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+}
+
+.voicero-icon-green {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.voicero-header-text h3 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.voicero-header-text p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.voicero-hot-posts-counter {
+  background-color: #e0f2fe;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid #0284c7;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.voicero-hot-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #0284c7;
+}
+
+.voicero-hot-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0c4a6e;
+}
+
+.voicero-loading-content {
+  text-align: center;
+  padding: 40px;
+}
+
+.voicero-spinner-wrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  animation: pulse 2s infinite;
+}
+
+.voicero-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #ffffff;
+  border-top: 3px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.voicero-loading-content h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.voicero-loading-content p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.voicero-error-card {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border: 1px solid #fecaca;
+}
+
+.voicero-tabs-container {
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+}
+
+.voicero-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.voicero-tab {
+  padding: 12px 20px;
+  border-radius: 8px;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  color: #374151;
+}
+
+.voicero-tab:hover {
+  background: #e5e7eb;
+  transform: translateY(-1px);
+}
+
+.voicero-tab-active {
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  border: 1px solid #1e40af;
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.voicero-tab-active:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+.voicero-blog-info-card {
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  border: 1px solid #7dd3fc;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.1);
+}
+
+.voicero-blog-info-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.voicero-blog-info-content h3 {
+  margin: 0;
+  color: #0c4a6e;
+  font-weight: bold;
+}
+
+.voicero-blog-posts-count {
+  background-color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid #7dd3fc;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0c4a6e;
+}
+
+.voicero-all-posts-card {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #7dd3fc;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.1);
+}
+
+.voicero-all-posts-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.voicero-all-posts-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.voicero-all-posts-info h3 {
+  margin: 0;
+  color: #581c87;
+  font-weight: bold;
+}
+
+.voicero-posts-counter {
+  background-color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid #7dd3fc;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0c4a6e;
+}
+
+.voicero-articles-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.voicero-articles-header h3 {
+  margin: 0;
+  color: #065f46;
+  font-weight: 600;
+}
+
+.voicero-article-item {
+  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 16px;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+}
+
+.voicero-article-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(16, 24, 40, 0.08);
+}
+
+.voicero-article-hot {
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+  border: 2px solid #fb923c;
+}
+
+.voicero-article-hot:hover {
+  box-shadow: 0 12px 24px rgba(251, 146, 60, 0.15);
+}
+
+.voicero-article-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.voicero-article-title-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.voicero-hot-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fb923c 0%, #ea580c 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(251, 146, 60, 0.3);
+  font-size: 16px;
+}
+
+.voicero-article-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: bold;
+  color: #1f2937;
+}
+
+.voicero-article-hot .voicero-article-title {
+  color: #ea580c;
+}
+
+.voicero-article-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.voicero-hot-toggle {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.voicero-hot-toggle:hover {
+  background: #e5e7eb;
+}
+
+.voicero-hot-toggle.voicero-hot-active {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  color: #92400e;
+}
+
+/* Hot toggle buttons are always enabled - no disabled state */
+
+.voicero-article-toggle {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.voicero-article-toggle:hover {
+  background: #e5e7eb;
+}
+
+.voicero-article-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.voicero-meta-tag {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.voicero-meta-date {
+  background-color: #eef6ff;
+  border: 1px solid #b3d7ff;
+  color: #1e40af;
+}
+
+.voicero-meta-author {
+  background-color: #f0fdf4;
+  border: 1px solid #86efac;
+  color: #059669;
+}
+
+.voicero-meta-blog {
+  background-color: #fef3c7;
+  border: 1px solid #fde68a;
+  color: #92400e;
+}
+
+.voicero-meta-hot {
+  background-color: #fff7ed;
+  border: 2px solid #fb923c;
+  color: #ea580c;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(251, 146, 60, 0.2);
+}
+
+.voicero-article-content {
+  margin-top: 16px;
+}
+
+.voicero-article-content-wrapper {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.voicero-article-content-wrapper h5 {
+  margin: 0 0 12px;
+  color: #1e40af;
+  font-weight: 600;
+}
+
+.voicero-article-text {
+  max-height: 500px;
+  overflow: auto;
+  padding: 20px;
+  background-color: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+  line-height: 1.6;
+  color: #374151;
+}
+
+.voicero-empty-articles {
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  border-radius: 16px;
+  padding: 40px;
+  text-align: center;
+  border: 1px solid #e5e7eb;
+}
+
+.voicero-empty-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 24px;
+  color: #6b7280;
+}
+
+.voicero-empty-articles h3 {
+  margin: 0 0 8px;
+  color: #374151;
+}
+
+.voicero-empty-articles p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.voicero-empty-content {
+  text-align: center;
+  padding: 40px;
+}
+
+.voicero-empty-content .voicero-empty-icon {
+  width: 80px;
+  height: 80px;
+  font-size: 32px;
+}
+
+.voicero-toast {
+  position: fixed;
+  top: 32px;
+  right: 20px;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 400px;
+}
+
+.voicero-toast-success {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+}
+
+.voicero-toast-error {
+  border-color: #ef4444;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+}
+
+.voicero-toast-message {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.voicero-toast-success .voicero-toast-message {
+  color: #065f46;
+}
+
+.voicero-toast-error .voicero-toast-message {
+  color: #b91c1c;
+}
+
+.voicero-toast-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.voicero-toast-close:hover {
+  color: #374151;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .voicero-header-content {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+
+  .voicero-article-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .voicero-article-actions {
+    align-self: flex-end;
+  }
+
+  .voicero-blog-info-content,
+  .voicero-all-posts-content {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+
+  .voicero-tabs {
+    flex-direction: column;
+  }
+
+  .voicero-tab {
+    text-align: center;
+  }
+}
+
+/* Help Center Styles */
+.voicero-help-page {
+  max-width: 100%;
+  margin: 0;
+}
+
+.voicero-help-page .dashicons {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+}
+
+.voicero-sidebar-header .dashicons {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+}
+
+.voicero-badge .dashicons {
+  width: 12px;
+  height: 12px;
+  font-size: 12px;
+}
+
+.voicero-delete-question .dashicons {
+  width: 14px;
+  height: 14px;
+  font-size: 14px;
+}
+
+.voicero-toast .dashicons {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+}
+
+/* Button icons - fix sizing and centering */
+.voicero-help-page button .dashicons {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+.voicero-sidebar-actions .dashicons {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+  vertical-align: middle;
+}
+
+.voicero-format-btn .dashicons {
+  width: 14px;
+  height: 14px;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.voicero-refresh-btn .dashicons {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+  vertical-align: middle;
+}
+
+/* Specific fix for the "Add first question" button */
+.voicero-empty-state button .dashicons {
+  width: 16px;
+  height: 16px;
+  font-size: 16px !important;
+  vertical-align: middle;
+}
+
+/* Center icons in all buttons */
+.voicero-help-page .button .dashicons {
+  margin-right: 6px;
+  vertical-align: middle;
+  display: inline-block;
+}
+
+.voicero-help-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.voicero-help-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.voicero-help-sidebar {
+  width: 300px;
+  flex-shrink: 0;
+}
+
+.voicero-help-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.voicero-sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.voicero-sidebar-header h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.voicero-questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.voicero-question-item {
+  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.voicero-question-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(16, 24, 40, 0.08);
+}
+
+.voicero-question-item.selected {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-color: #3b82f6;
+  border-width: 2px;
+}
+
+.voicero-question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.voicero-question-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  flex: 1;
+  word-wrap: break-word;
+}
+
+.voicero-question-order {
+  background: #f3f4f6;
+  color: #6b7280;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-left: 8px;
+}
+
+.voicero-question-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.voicero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid;
+}
+
+.voicero-badge-ai-generated {
+  background: #eff6ff;
+  color: #3b82f6;
+  border-color: #bfdbfe;
+}
+
+.voicero-badge-manual {
+  background: #f0fdf4;
+  color: #16a34a;
+  border-color: #86efac;
+}
+
+.voicero-badge-published {
+  background: #f0fdf4;
+  color: #16a34a;
+  border-color: #86efac;
+}
+
+.voicero-badge-draft {
+  background: #fef3c7;
+  color: #d97706;
+  border-color: #fde68a;
+}
+
+.voicero-question-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.voicero-delete-question {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #dc2626;
+  font-size: 12px;
+  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.voicero-delete-question:hover {
+  background: #fecaca;
+  border-color: #fca5a5;
+}
+
+.voicero-no-selection {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.voicero-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.voicero-empty-state .dashicons {
+  font-size: 64px;
+  color: #9ca3af;
+  margin-bottom: 16px;
+  width: 64px;
+  height: 64px;
+}
+
+.voicero-empty-state h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.voicero-empty-state p {
+  margin: 0 0 20px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.voicero-question-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.voicero-question-header {
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+}
+
+.voicero-question-title-section {
+  margin-bottom: 20px;
+}
+
+.voicero-title-display h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.voicero-title-input {
+  width: 100%;
+  font-size: 18px;
+  font-weight: 600;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.voicero-meta-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.voicero-meta-tag {
+  background: #f3f4f6;
+  color: #6b7280;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid #d1d5db;
+}
+
+.voicero-question-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.voicero-action-group {
+  display: flex;
+  gap: 12px;
+}
+
+.voicero-publish-btn {
+  background: #10b981;
+  border-color: #10b981;
+  color: white;
+}
+
+.voicero-unpublish-btn {
+  background: #6b7280;
+  border-color: #6b7280;
+  color: white;
+}
+
+.voicero-question-editor {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+}
+
+.voicero-content-display {
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+  min-height: 400px;
+  line-height: 1.6;
+  color: #374151;
+}
+
+.voicero-editor-header {
+  margin-bottom: 16px;
+}
+
+.voicero-editor-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.voicero-editor-toolbar {
+  display: flex;
+  gap: 4px;
+  padding: 8px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+}
+
+.voicero-format-btn {
+  background: none;
+  border: 1px solid transparent;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  transition: all 0.2s ease;
+  width: 32px;
+  height: 32px;
+}
+
+.voicero-format-btn .dashicons {
+  width: 14px !important;
+  height: 14px !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+}
+
+.voicero-format-btn:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.voicero-format-btn:active,
+.voicero-format-btn.active {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.voicero-toolbar-separator {
+  width: 1px;
+  background: #d1d5db;
+  margin: 4px 8px;
+}
+
+.voicero-editor-container {
+  border: 1px solid #e5e7eb;
+  border-radius: 0 0 8px 8px;
+  min-height: 300px;
+}
+
+.voicero-rich-editor {
+  padding: 16px;
+  min-height: 280px;
+  outline: none;
+  line-height: 1.6;
+  font-size: 14px;
+  color: #374151;
+}
+
+.voicero-rich-editor:empty::before {
+  content: attr(placeholder);
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.voicero-toast {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-left: 4px solid;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: slideInRight 0.3s ease;
+}
+
+.voicero-toast-success {
+  border-left-color: #10b981;
+}
+
+.voicero-toast-success .dashicons {
+  color: #10b981;
+}
+
+.voicero-toast-error {
+  border-left-color: #ef4444;
+}
+
+.voicero-toast-error .dashicons {
+  color: #ef4444;
+}
+
+.voicero-toast-message {
+  flex: 1;
+  font-size: 14px;
+  color: #374151;
+}
+
+.voicero-toast-close {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.voicero-toast-close:hover {
+  color: #6b7280;
+}
+
+.voicero-empty-message {
+  text-align: center;
+  color: #9ca3af;
+  font-style: italic;
+  padding: 20px;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive design for help center */
+@media (max-width: 768px) {
+  .voicero-help-layout {
+    flex-direction: column;
+  }
+
+  .voicero-help-sidebar {
+    width: 100%;
+    order: 2;
+  }
+
+  .voicero-help-main {
+    order: 1;
+  }
+}
