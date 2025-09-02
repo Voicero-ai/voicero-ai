@@ -81,115 +81,8 @@ function voicero_render_ai_overview_page() {
         'Opportunity to enhance user engagement by integrating dynamic product recommendations directly from conversations (e.g., suggesting related products after product inquiries) and simplifying cart and checkout steps, given multiple add-to-cart and checkout interactions.'
     ];
     
-    // Try to get real data from the API
-    $access_key = get_option('voicero_access_key', '');
-    if (!empty($access_key)) {
-        // Get website ID
-        $website_id = get_option('voicero_website_id', '');
-        
-        if (empty($website_id)) {
-        } else {
-            // Validate website ID format (should be a UUID in most cases)
-            if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $website_id)) {
-                // Don't fail here, the API will validate
-            }
-            
-            // Prepare request data
-            $request_data = [
-                'websiteId' => $website_id,
-                'type' => 'WordPress'
-            ];
-            
-            // Log the request data for debugging
-            
-            // Use the configured API base URL for flexibility
-            $api_base = defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://56b2c4656c5a.ngrok-free.app/api';
-            $endpoint  = trailingslashit($api_base) . 'aiHistory';
-            $response = wp_remote_post($endpoint, [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $access_key,
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json',
-                ],
-                'body' => json_encode($request_data),
-                'timeout' => 15,
-                'sslverify' => false,
-            ]);
-
-            if (is_wp_error($response)) {
-            } else {
-                $code = wp_remote_retrieve_response_code($response);
-                $body = wp_remote_retrieve_body($response);
-                
-                
-                if ($code === 200) {
-                    $api_data = json_decode($body, true);
-                    
-                    // Proceed with data processing if we have valid JSON
-                    if (is_array($api_data)) {
-                        if (isset($api_data['total_queries'])) {
-                            $total_queries = $api_data['total_queries'];
-                        }
-                        
-                        if (isset($api_data['query_limit'])) {
-                            $query_limit = $api_data['query_limit'];
-                        }
-                        
-                        if (isset($api_data['current_plan'])) {
-                            $current_plan = $api_data['current_plan'];
-                        }
-                        
-                        if (isset($api_data['threads']) && is_array($api_data['threads'])) {
-                            // Format the threads data into the format expected by the page
-                            $recent_queries = [];
-                            foreach ($api_data['threads'] as $thread) {
-                                // Find the first user message to use as the query text
-                                $query_text = "No query text available";
-                                $message_count = isset($thread['messageCount']) ? $thread['messageCount'] : 0;
-                                
-                                if (isset($thread['messages']) && is_array($thread['messages'])) {
-                                    foreach ($thread['messages'] as $message) {
-                                        if (isset($message['role']) && $message['role'] === 'user') {
-                                            $query_text = $message['content'];
-                                            break;
-                                        }
-                                    }
-                                }
-                                
-                                // Format timestamp
-                                $timestamp = isset($thread['lastMessageAt']) 
-                                    ? gmdate('n/j/Y g:i A', strtotime($thread['lastMessageAt'])) 
-                                    : gmdate('n/j/Y g:i A');
-                                
-                                $recent_queries[] = [
-                                    'query' => $query_text,
-                                    'timestamp' => $timestamp,
-                                    'message_count' => $message_count
-                                ];
-                            }
-                        }
-                        
-                        if (isset($api_data['analysis'])) {
-                            // Split the analysis into bullet points
-                            $analysis_text = $api_data['analysis'];
-                            $usage_analysis = [];
-                            
-                            // Split by bullet points or numbered lists
-                            preg_match_all('/(?:^|\n)(?:\*|\-|\d+\.)\s*(.+)/', $analysis_text, $matches);
-                            
-                            if (!empty($matches[1])) {
-                                $usage_analysis = $matches[1];
-                            } else {
-                                // If no bullet points found, just use the whole text
-                                $usage_analysis = [$analysis_text];
-                            }
-                        }
-                    }
-                } else {
-                }
-            }
-        }
-    }
+    // Don't try to get API data on page load - let JavaScript handle it asynchronously
+    // This makes the page load much faster
     
     ?>
     <div class="wrap voicero-ai-overview-page">
@@ -222,9 +115,7 @@ function voicero_render_ai_overview_page() {
             
             <div class="voicero-card-content">
                 <ul class="analysis-list">
-                    <?php foreach ($usage_analysis as $analysis_point): ?>
-                        <li><?php echo esc_html($analysis_point); ?></li>
-                    <?php endforeach; ?>
+                    <li class="loading-placeholder">🔄 Loading AI usage analysis...</li>
                 </ul>
             </div>
         </div>      
@@ -240,18 +131,7 @@ function voicero_render_ai_overview_page() {
             
             <div class="voicero-card-content">
                 <div class="recent-queries-list">
-                    <?php foreach ($recent_queries as $query): ?>
-                        <div class="query-item">
-                            <div class="query-content">
-                                <div class="query-text"><?php echo esc_html($query['query']); ?></div>
-                                <div class="query-time"><?php echo esc_html($query['timestamp']); ?></div>
-                            </div>
-                            <div class="query-stats">
-                                <div class="message-count"><?php echo esc_html($query['message_count']); ?> messages</div>
-                                <a href="#" class="view-more-link">View More</a>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
+                    <div class="loading-placeholder">🔄 Loading recent conversations...</div>
                 </div>
                 
                 <div class="view-all-container">
@@ -288,6 +168,38 @@ function voicero_render_ai_overview_page() {
         
         // Get website ID for script localization
         $website_id = get_option('voicero_website_id', '');
+        
+        // If no website ID, try to get it from the connect API
+        if (empty($website_id)) {
+            $access_key = get_option('voicero_access_key', '');
+            if (!empty($access_key)) {
+                $response = wp_remote_get(VOICERO_API_URL . '/connect?access_token=' . urlencode($access_key), [
+                    'headers' => [
+                        'Content-Type' => 'application/json',
+                        'Accept' => 'application/json'
+                    ],
+                    'timeout' => 15,
+                    'sslverify' => false
+                ]);
+                
+                if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) === 200) {
+                    $body = wp_remote_retrieve_body($response);
+                    $data = json_decode($body, true);
+                    
+                    if (isset($data['website']['id'])) {
+                        $website_id = $data['website']['id'];
+                        // Save it for future use
+                        update_option('voicero_website_id', $website_id);
+                        error_log('AI Overview: Retrieved and saved website ID: ' . $website_id);
+                    }
+                }
+            }
+        }
+        
+        // Debug website ID
+        error_log('=== AI OVERVIEW PAGE WEBSITE ID ===');
+        error_log('Website ID from options: ' . ($website_id ?: 'EMPTY'));
+        error_log('=== END AI OVERVIEW PAGE WEBSITE ID ===');
         
         // Create a nonce for the AJAX request
         $nonce = wp_create_nonce('voicero_ajax_nonce');

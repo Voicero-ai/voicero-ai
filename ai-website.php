@@ -143,8 +143,8 @@ function voicero_admin_page() {
         esc_html__('AI Overview', 'voicero-ai'),      // Page title
         esc_html__('AI Overview', 'voicero-ai'),      // Menu title
         'manage_options',                             // Capability
-        'voicero-ai-admin',                           // Menu slug (same as parent for first item)
-        'voicero_render_admin_page'                   // Callback function
+        'voicero-ai-overview',                        // Menu slug (unique for AI overview)
+        'voicero_render_ai_overview_page'             // Callback function
     );
 
     // 2. Customize Chatbot (renamed from Chatbot Update)
@@ -163,7 +163,7 @@ function voicero_admin_page() {
         esc_html__('Help Interface', 'voicero-ai'),   // Page title
         esc_html__('Help Interface', 'voicero-ai'),   // Menu title
         'manage_options',                             // Capability
-        'voicero-ai-overview',                        // Menu slug
+        'voicero-ai-help',                            // Menu slug
         'voicero_render_help_page_content'            // Callback function
     );
 

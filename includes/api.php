@@ -1873,10 +1873,17 @@ function voicero_transcribe_audio() {
 add_action('wp_ajax_voicero_get_ai_history', 'voicero_get_ai_history_ajax');
 
 function voicero_get_ai_history_ajax() {
-    // Log all request data for debugging
+    // Log that this function is being called
+    error_log('=== VOICERO AI HISTORY AJAX CALLED ===');
+    error_log('Request method: ' . $_SERVER['REQUEST_METHOD']);
+    error_log('DOING_AJAX defined: ' . (defined('DOING_AJAX') ? 'YES' : 'NO'));
+    error_log('DOING_AJAX value: ' . (defined('DOING_AJAX') ? (DOING_AJAX ? 'TRUE' : 'FALSE') : 'NOT_DEFINED'));
+    error_log('POST data: ' . print_r($_POST, true));
+    error_log('=== END VOICERO AI HISTORY AJAX CALLED ===');
     
     // 1) Must be AJAX
     if (!defined('DOING_AJAX') || !DOING_AJAX) {
+        error_log('AI History AJAX: Not AJAX request, exiting');
         wp_send_json_error(['message' => esc_html__('Invalid request type', 'voicero-ai')], 400);
         return;
     }
@@ -1922,12 +1929,18 @@ function voicero_get_ai_history_ajax() {
         'type' => 'WordPress'
     ];
 
-    // Log the request data for debugging
-
     // 7) Make the API request
     // Allow the API base URL to be configured via constant
     $api_base = defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://56b2c4656c5a.ngrok-free.app/api';
     $endpoint  = trailingslashit($api_base) . 'aiHistory';
+
+    // Log the request data for debugging
+    error_log('=== AI HISTORY REQUEST DATA ===');
+    error_log('Website ID: ' . $website_id);
+    error_log('Request Data: ' . json_encode($request_data));
+    error_log('API Endpoint: ' . $endpoint);
+    error_log('Access Key (first 10 chars): ' . substr($access_key, 0, 10) . '...');
+    error_log('=== END AI HISTORY REQUEST DATA ===');
     
     try {
         $response = wp_remote_post($endpoint, [
@@ -1967,8 +1980,22 @@ function voicero_get_ai_history_ajax() {
     $response_body = wp_remote_retrieve_body($response);
     
     // Log the response for debugging
+    error_log('=== AI HISTORY API RESPONSE ===');
+    error_log('Status Code: ' . $status_code);
+    error_log('Response Body: ' . $response_body);
+    error_log('Response Length: ' . strlen($response_body));
+    error_log('=== END AI HISTORY API RESPONSE ===');
     
     $data = json_decode($response_body, true);
+    
+    // Log the decoded data
+    error_log('=== AI HISTORY DECODED DATA ===');
+    error_log('Decoded Data: ' . json_encode($data, JSON_PRETTY_PRINT));
+    error_log('Data Type: ' . gettype($data));
+    if (is_array($data)) {
+        error_log('Data Keys: ' . implode(', ', array_keys($data)));
+    }
+    error_log('=== END AI HISTORY DECODED DATA ===');
 
     // Handle specific error codes
     if ($status_code === 400) {

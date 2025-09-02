@@ -515,6 +515,208 @@ jQuery(document).ready(function ($) {
     }
   );
 
+  /**
+   * Build AI Overview Section HTML
+   * @param {Object} data - The website data containing aiOverview
+   */
+  function buildAIOverviewSection(data) {
+    const overview = data.aiOverview;
+    const globalStats = data.globalStats;
+
+    if (!overview) return "";
+
+    let html = `
+      <!-- AI Overview Section -->
+      <div style="
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        margin-top: 24px;
+      ">
+        <h3 style="
+          margin: 0 0 24px;
+          font-size: 20px;
+          font-weight: 600;
+          color: #1f2937;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        ">
+          <span class="dashicons dashicons-chart-line" style="color: #667eea; font-size: 24px;"></span>
+          AI Assistant Performance
+        </h3>
+    `;
+
+    // Problem Resolution Rate
+    if (overview.problem_resolution_rate) {
+      const rate = overview.problem_resolution_rate;
+      html += `
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 24px;">
+          <h4 style="margin: 0 0 16px; color: #2271b1; font-size: 16px;">📊 Problem Resolution Summary</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 16px;">
+            <div style="text-align: center;">
+              <div style="font-size: 32px; font-weight: 700; color: #22c55e;">${
+                rate.percent
+              }%</div>
+              <div style="color: #666; font-size: 14px;">Resolution Rate</div>
+            </div>
+            <div style="text-align: center;">
+              <div style="font-size: 32px; font-weight: 700; color: #3b82f6;">${
+                rate.resolved_threads
+              }</div>
+              <div style="color: #666; font-size: 14px;">Resolved</div>
+            </div>
+            <div style="text-align: center;">
+              <div style="font-size: 32px; font-weight: 700; color: #ef4444;">${
+                rate.total_threads - rate.resolved_threads
+              }</div>
+              <div style="color: #666; font-size: 14px;">Need Work</div>
+            </div>
+            <div style="text-align: center;">
+              <div style="font-size: 32px; font-weight: 700; color: #8b5cf6;">${
+                overview.avg_messages_per_thread
+              }</div>
+              <div style="color: #666; font-size: 14px;">Avg Messages</div>
+            </div>
+          </div>
+          <div style="font-size: 13px; color: #666; text-align: center; font-style: italic;">
+            ${overview.period_label}
+          </div>
+        </div>
+      `;
+    }
+
+    // Most Common Questions
+    if (
+      overview.most_common_questions &&
+      overview.most_common_questions.length > 0
+    ) {
+      html += `
+        <div style="margin-bottom: 24px;">
+          <h4 style="margin: 0 0 16px; color: #22c55e; font-size: 16px;">💬 Most Common Question Categories</h4>
+          <div style="display: grid; gap: 12px;">
+      `;
+
+      overview.most_common_questions.forEach((category) => {
+        html += `
+          <div style="background: #f0fdf4; border-left: 4px solid #22c55e; padding: 16px; border-radius: 0 6px 6px 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h5 style="color: #15803d; margin: 0; font-size: 15px; font-weight: 600;">${category.category}</h5>
+              <span style="background: #22c55e; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                ${category.threads} threads
+              </span>
+            </div>
+            <p style="margin: 0; color: #166534; line-height: 1.5; font-size: 14px;">${category.description}</p>
+          </div>
+        `;
+      });
+
+      html += `
+          </div>
+        </div>
+      `;
+    }
+
+    // Recent Questions by Topic (collapsible)
+    if (
+      overview.recent_questions_by_topic &&
+      overview.recent_questions_by_topic.length > 0
+    ) {
+      html += `
+        <div style="margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h4 style="margin: 0; color: #3b82f6; font-size: 16px;">🔍 Recent Questions by Topic</h4>
+            <button class="button button-secondary" onclick="toggleRecentQuestions()" style="font-size: 12px; padding: 4px 8px;">
+              <span id="toggle-questions-text">Show Details</span>
+            </button>
+          </div>
+          <div id="recent-questions-details" style="display: none;">
+      `;
+
+      overview.recent_questions_by_topic.forEach((topic) => {
+        html += `
+          <div style="background: #f0f4ff; border: 1px solid #3b82f6; padding: 16px; margin-bottom: 16px; border-radius: 8px;">
+            <h5 style="color: #1e40af; margin: 0 0 12px 0; font-size: 15px; font-weight: 600;">
+              ${topic.topic} (${topic.items.length} questions)
+            </h5>
+            <div style="display: grid; gap: 8px;">
+        `;
+
+        topic.items.forEach((item) => {
+          const statusColor =
+            item.status === "Resolved" ? "#22c55e" : "#ef4444";
+          const statusBg = item.status === "Resolved" ? "#f0fdf4" : "#fef2f2";
+
+          html += `
+            <div style="background: white; border: 1px solid #e5e7eb; padding: 12px; border-radius: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <strong style="color: #1f2937; font-size: 14px;">"${item.question}"</strong>
+                <span style="background: ${statusBg}; color: ${statusColor}; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">
+                  ${item.status}
+                </span>
+              </div>
+              <p style="margin: 0; color: #6b7280; font-size: 13px; line-height: 1.4;">${item.note}</p>
+            </div>
+          `;
+        });
+
+        html += `
+            </div>
+          </div>
+        `;
+      });
+
+      html += `
+          </div>
+        </div>
+      `;
+    }
+
+    // Action Statistics removed per user request
+
+    html += `
+      </div>
+      
+      <script>
+        function toggleRecentQuestions() {
+          const details = document.getElementById('recent-questions-details');
+          const text = document.getElementById('toggle-questions-text');
+          if (details.style.display === 'none') {
+            details.style.display = 'block';
+            text.textContent = 'Hide Details';
+          } else {
+            details.style.display = 'none';
+            text.textContent = 'Show Details';
+          }
+        }
+      </script>
+    `;
+
+    return html;
+  }
+
+  /**
+   * Update the AI Overview section with detailed data
+   * @param {Object} detailedData - The detailed website data containing aiOverview
+   */
+  function updateAIOverviewSection(detailedData) {
+    console.log("=== UPDATING AI OVERVIEW SECTION ===");
+    console.log("detailedData.aiOverview exists:", !!detailedData.aiOverview);
+
+    // Find the AI Overview placeholder
+    const $placeholder = $("#ai-overview-placeholder");
+
+    if ($placeholder.length && detailedData.aiOverview) {
+      console.log("Populating AI overview placeholder with real data");
+      // Replace the placeholder with the real AI overview section
+      const aiOverviewHtml = buildAIOverviewSection(detailedData);
+      $placeholder.html(aiOverviewHtml);
+    } else {
+      console.log("No aiOverview data or placeholder not found");
+    }
+  }
+
   // Function to load website info
   function loadWebsiteInfo() {
     var $container = $("#website-info-container");
@@ -575,6 +777,27 @@ jQuery(document).ready(function ($) {
               }
             }
             console.log("=== END WEBSITE INFO ===");
+
+            // Log AI Overview data if available
+            if (response.data && response.data.aiOverview) {
+              console.log("=== AI OVERVIEW DATA ===");
+              console.log("AI Overview:", response.data.aiOverview);
+              console.log("Global Stats:", response.data.globalStats);
+              console.log(
+                "Recent Questions by Topic:",
+                response.data.aiOverview.recent_questions_by_topic
+              );
+              console.log(
+                "Most Common Questions:",
+                response.data.aiOverview.most_common_questions
+              );
+              console.log(
+                "Problem Resolution Rate:",
+                response.data.aiOverview.problem_resolution_rate
+              );
+              console.log("=== END AI OVERVIEW DATA ===");
+            }
+
             resolve(response);
           })
           .fail(function (xhr) {
@@ -671,10 +894,7 @@ jQuery(document).ready(function ($) {
         // Build HTML for modern dashboard with Shopify-style design
         let html = `
           <div class="wrap" style="max-width: 100%; padding: 0; margin: 0;">
-            <h2 class="wp-heading-inline" style="margin-top: 0;">Dashboard</h2>
-            <p class="description">Manage your AI-powered shopping assistant for ${
-              data.name || "your website"
-            }</p>
+           
             
             <!-- Header Actions -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin: 20px 0;">
@@ -1311,6 +1531,10 @@ jQuery(document).ready(function ($) {
 
 
             </div>
+            
+            <!-- AI Overview Section - Will be populated by fetchDetailedWebsiteData -->
+            <div id="ai-overview-placeholder"></div>
+
           </div>
         `;
 
@@ -1490,6 +1714,9 @@ jQuery(document).ready(function ($) {
           console.log("=== END DETAILED DATA ===");
 
           updateContentDisplay(response.data);
+
+          // Update AI Overview section with the detailed data
+          updateAIOverviewSection(response.data);
         }
       })
       .fail(function (error) {

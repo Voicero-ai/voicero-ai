@@ -36,8 +36,29 @@
       navigateToSettings();
     });
 
-    // First load website info to get the website ID, then load AI history data
-    loadWebsiteInfo();
+    // Load AI history data directly using the website ID from the config
+    var config = typeof voiceroConfig !== "undefined" ? voiceroConfig : {};
+
+    // Debug the config object
+    console.log("=== AI OVERVIEW CONFIG DEBUG ===");
+    console.log("voiceroConfig exists:", typeof voiceroConfig !== "undefined");
+    console.log("voiceroConfig object:", voiceroConfig);
+    console.log("config object:", config);
+    console.log("config.websiteId:", config.websiteId);
+    console.log("config.websiteId type:", typeof config.websiteId);
+    console.log("config.websiteId empty check:", !config.websiteId);
+    console.log("=== END AI OVERVIEW CONFIG DEBUG ===");
+
+    if (config.websiteId) {
+      loadAIHistory(config.websiteId);
+    } else {
+      console.error(
+        "Website ID is missing from config, cannot load AI history"
+      );
+      showErrorMessage(
+        "Website ID not found. Please configure your website in the settings."
+      );
+    }
   }
 
   /**
@@ -86,6 +107,7 @@
   /**
    * Load website information first, then load AI history
    * Similar to the approach in voicero-settings.js
+   * NOTE: This function is no longer used in AI Overview - we get websiteId directly from config
    */
   function loadWebsiteInfo() {
     // Show loading overlay
@@ -186,6 +208,12 @@
           };
 
     // Use jQuery AJAX just like in voicero-settings.js
+    console.log("=== MAKING AI HISTORY AJAX CALL ===");
+    console.log("AJAX URL:", config.ajaxUrl);
+    console.log("Website ID:", websiteId);
+    console.log("Nonce:", config.nonce);
+    console.log("=== END AJAX CALL SETUP ===");
+
     $.ajax({
       url: config.ajaxUrl,
       type: "POST",
@@ -197,12 +225,39 @@
       success: function (response) {
         hideLoadingIndicator();
 
-        // Log the full response data
-        "AI History API Response:", response;
+        // Console log EVERYTHING from the AI History API
+        console.log("=== AI HISTORY API RESPONSE (FULL) ===");
+        console.log("Full Response Object:", response);
+        console.log("Response Success:", response.success);
+        console.log("Response Data:", response.data);
+        console.log("Response Data Type:", typeof response.data);
+        console.log(
+          "Response Data Keys:",
+          response.data ? Object.keys(response.data) : "No data"
+        );
+        console.log("=== END AI HISTORY API RESPONSE ===");
 
         if (response.success) {
-          // Display the AI history data
-          "AI History Data:", response.data;
+          console.log("=== AI HISTORY DATA DETAILS ===");
+          console.log("Data object:", response.data);
+
+          if (response.data) {
+            console.log("Analysis:", response.data.analysis);
+            console.log("Threads:", response.data.threads);
+            console.log("Thread Count:", response.data.threadCount);
+            console.log("Total Queries:", response.data.total_queries);
+            console.log("Current Plan:", response.data.current_plan);
+            console.log("Query Limit:", response.data.query_limit);
+
+            // Log each thread individually if they exist
+            if (response.data.threads && Array.isArray(response.data.threads)) {
+              console.log("Individual Threads:");
+              response.data.threads.forEach((thread, index) => {
+                console.log(`Thread ${index}:`, thread);
+              });
+            }
+          }
+          console.log("=== END AI HISTORY DATA DETAILS ===");
 
           // Store the data globally so we can access it when viewing conversation details
           window.latestAIHistoryData = response.data;
@@ -257,9 +312,7 @@
     // Check if data is empty or has no relevant information
     var hasNoData =
       !data ||
-      (data.analysis === null &&
-        (!data.threads || data.threads.length === 0) &&
-        data.threadCount === 0);
+      ((!data.threads || data.threads.length === 0) && data.threadCount === 0);
 
     if (hasNoData) {
       // Show empty state messages
@@ -269,78 +322,185 @@
       $(".recent-queries-list").html(
         "<div class='empty-state'>No recent conversations found. Conversations will appear here once users start interacting with the AI.</div>"
       );
-
-      // Update stats to show zeros
-      $(".usage-amount").text("0");
-      $(".stats-grid .stats-value").text("-");
-
       return;
     }
 
-    // Update analysis section if we have analysis data
-    if (data.analysis) {
-      updateAnalysisSection(data.analysis);
-    } else {
-      $(".analysis-list").html(
-        "<li>No AI usage analysis available yet. This will appear after more user interactions.</li>"
-      );
-    }
-
-    // Update recent queries if we have thread data
-    if (data.threads && data.threads.length > 0) {
-      updateRecentQueries(data.threads);
-    } else {
-      $(".recent-queries-list").html(
-        "<div class='empty-state'>No recent conversations found. Conversations will appear here once users start interacting with the AI.</div>"
-      );
-    }
-
-    // Update thread count/stats if available
-    if (data.threadCount !== undefined) {
-      $(".usage-amount").text(data.threadCount);
-    } else {
-      $(".usage-amount").text("0");
-    }
+    // Update the page with the rich new data structure
+    updateKPISection(data);
+    updateAnalysisSection(data);
+    updateRecentQueries(data.threads || []);
 
     // Show a success message briefly
-    showSuccessMessage("AI history data loaded successfully");
+    showSuccessMessage("AI usage data loaded successfully");
   }
 
   /**
-   * Update the analysis section with the AI-generated analysis
-   * @param {string} analysis - The analysis text
+   * Update the KPI metrics section
+   * @param {Object} data - The AI history data
    */
-  function updateAnalysisSection(analysis) {
-    // Handle null or empty analysis
-    if (!analysis) {
+  function updateKPISection(data) {
+    // Update thread count
+    if (data.threadCount !== undefined) {
+      $(".usage-amount").text(data.threadCount);
+    }
+
+    // If we have KPI snapshot data, display it
+    if (data.report && data.report.kpi_snapshot) {
+      var kpi = data.report.kpi_snapshot;
+
+      // Update or create KPI cards if they don't exist
+      var $kpiContainer = $(".voicero-card").first();
+      if ($kpiContainer.length) {
+        // Add KPI metrics after the usage amount
+        var kpiHtml = `
+          <div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 20px;">
+            <div class="kpi-card">
+              <div class="kpi-value" style="font-size: 24px; font-weight: 600; color: #22c55e;">${
+                kpi.helpful_percent || 0
+              }%</div>
+              <div class="kpi-label" style="color: #666; font-size: 14px;">Helpful Interactions</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-value" style="font-size: 24px; font-weight: 600; color: #ef4444;">${
+                kpi.needs_work_percent || 0
+              }%</div>
+              <div class="kpi-label" style="color: #666; font-size: 14px;">Need Improvement</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-value" style="font-size: 24px; font-weight: 600; color: #3b82f6;">${
+                kpi.total_threads || 0
+              }</div>
+              <div class="kpi-label" style="color: #666; font-size: 14px;">Total Conversations</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-value" style="font-size: 24px; font-weight: 600; color: #8b5cf6;">${
+                kpi.avg_user_messages_when_good || 0
+              }</div>
+              <div class="kpi-label" style="color: #666; font-size: 14px;">Avg Messages (Good)</div>
+            </div>
+          </div>
+        `;
+
+        // Insert after the usage stats
+        $kpiContainer.find(".voicero-card-content").append(kpiHtml);
+      }
+    }
+  }
+
+  /**
+   * Update the analysis section with the rich AI analysis data
+   * @param {Object} data - The full AI history data object
+   */
+  function updateAnalysisSection(data) {
+    var $analysisContainer = $(".analysis-list").parent().parent();
+
+    if (!data.report) {
       $(".analysis-list").html("<li>No analysis data available</li>");
       return;
     }
 
-    // Check if the analysis is already in HTML format with bullet points
-    if (analysis.includes("<li>") && analysis.includes("</li>")) {
-      $(".analysis-list").html(analysis);
-      return;
+    var report = data.report;
+    var analysisHtml = "";
+
+    // Main AI Usage Analysis
+    if (report.ai_usage_analysis) {
+      analysisHtml += `
+        <div class="analysis-section">
+          <h3 style="color: #2271b1; margin-bottom: 15px; font-size: 16px;">📊 Overall Analysis</h3>
+          <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 20px; line-height: 1.6;">
+            ${parseMarkdown(report.ai_usage_analysis)}
+          </div>
+        </div>
+      `;
     }
 
-    // Split the analysis into bullet points
-    var bulletPoints = analysis
-      .split(/•|\*/)
-      .filter((point) => point.trim().length > 0);
-
-    if (bulletPoints.length === 0) {
-      $(".analysis-list").html(
-        "<li>Analysis data was received but contained no bullet points</li>"
-      );
-      return;
+    // What's Working Section
+    if (report.whats_working && report.whats_working.length > 0) {
+      analysisHtml += `
+        <div class="analysis-section">
+          <h3 style="color: #22c55e; margin-bottom: 15px; font-size: 16px;">✅ What's Working Well</h3>
+          <ul style="margin-bottom: 20px;">
+            ${report.whats_working
+              .map(
+                (item) =>
+                  `<li style="margin-bottom: 8px; color: #059669;">${item}</li>`
+              )
+              .join("")}
+          </ul>
+        </div>
+      `;
     }
 
-    // Create HTML for each bullet point with markdown parsing
-    var analysisHtml = bulletPoints
-      .map((point) => `<li>${parseMarkdown(point.trim())}</li>`)
-      .join("");
+    // Quick Wins Section
+    if (report.quick_wins && report.quick_wins.length > 0) {
+      analysisHtml += `
+        <div class="analysis-section">
+          <h3 style="color: #3b82f6; margin-bottom: 15px; font-size: 16px;">🚀 Quick Wins</h3>
+          <ul style="margin-bottom: 20px;">
+            ${report.quick_wins
+              .map(
+                (item) =>
+                  `<li style="margin-bottom: 8px; color: #2563eb;">${item}</li>`
+              )
+              .join("")}
+          </ul>
+        </div>
+      `;
+    }
 
-    // Update the analysis list
+    // Pain Points Section
+    if (report.pain_points && report.pain_points.length > 0) {
+      analysisHtml += `
+        <div class="analysis-section">
+          <h3 style="color: #ef4444; margin-bottom: 15px; font-size: 16px;">⚠️ Areas for Improvement</h3>
+          <div style="margin-bottom: 20px;">
+            ${report.pain_points
+              .map(
+                (point) => `
+              <div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin-bottom: 10px; border-radius: 0 6px 6px 0;">
+                <h4 style="color: #dc2626; margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">${point.title}</h4>
+                <p style="margin: 0; color: #b91c1c; line-height: 1.5;">${point.description}</p>
+              </div>
+            `
+              )
+              .join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    // Chat Review Summary
+    if (report.chat_review) {
+      var review = report.chat_review;
+      analysisHtml += `
+        <div class="analysis-section">
+          <h3 style="color: #8b5cf6; margin-bottom: 15px; font-size: 16px;">💬 Conversation Quality</h3>
+          <div style="background: #faf5ff; padding: 15px; border-radius: 6px; margin-bottom: 10px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+              <div>
+                <div style="font-size: 18px; font-weight: 600; color: #22c55e;">${
+                  review.good_count || 0
+                }</div>
+                <div style="color: #666; font-size: 12px;">Good Conversations</div>
+              </div>
+              <div>
+                <div style="font-size: 18px; font-weight: 600; color: #ef4444;">${
+                  review.needs_work_count || 0
+                }</div>
+                <div style="color: #666; font-size: 12px;">Need Work</div>
+              </div>
+            </div>
+            <div style="margin-top: 10px; font-size: 13px; color: #7c3aed;">
+              <strong>Good:</strong> ${
+                review.good_definition || "No definition available"
+              }
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Replace the analysis list with our rich content
     $(".analysis-list").html(analysisHtml);
   }
 
@@ -985,6 +1145,17 @@
                 .loading-overlay .spinner {
                     float: none;
                     margin: 0 0 10px 0;
+                }
+                
+                /* Loading placeholders */
+                .loading-placeholder {
+                    text-align: center;
+                    color: #666;
+                    font-style: italic;
+                    padding: 20px;
+                    background: #f9f9f9;
+                    border-radius: 4px;
+                    border: 1px dashed #ddd;
                 }
             </style>
         `);
