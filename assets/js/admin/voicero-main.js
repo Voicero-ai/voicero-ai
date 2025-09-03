@@ -970,7 +970,7 @@ jQuery(document).ready(function ($) {
               ${
                 data.id
                   ? `
-                <a href="https://d37c011f0026.ngrok-free.app/app/websites/website?id=${data.id}" 
+                <a href="https://56b2c4656c5a.ngrok-free.app/app/websites/website?id=${data.id}" 
                    target="_blank" 
                    class="button button-primary open-control-panel"
                    style="

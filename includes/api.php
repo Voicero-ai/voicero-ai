@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
 
 // Define the API base URL if not already defined
 if (!defined('VOICERO_API_URL')) {
-    define('VOICERO_API_URL', 'https://d37c011f0026.ngrok-free.app/api');
+    define('VOICERO_API_URL', 'https://56b2c4656c5a.ngrok-free.app/api');
 }
 
 /**
@@ -243,7 +243,117 @@ add_action('rest_api_init', function() {
             'permission_callback' => '__return_true'
         ]
     );
+
+    // Register the getOrders endpoint (for Node.js compatibility)
+    register_rest_route(
+        'voicero/v1',
+        '/getOrders',
+        [
+            'methods'             => 'GET',
+            'callback'            => 'voicero_get_orders_rest',
+            'permission_callback' => '__return_true',
+        ]
+    );
+
+    // Register the trackOrder endpoint (for Node.js compatibility)
+    register_rest_route(
+        'voicero/v1',
+        '/trackOrder',
+        [
+            'methods'             => 'GET',
+            'callback'            => 'voicero_track_order_rest',
+            'permission_callback' => '__return_true',
+        ]
+    );
+
+    // Register the cancelOrder endpoint (for Node.js compatibility)
+    register_rest_route(
+        'voicero/v1',
+        '/cancelOrder',
+        [
+            'methods'             => 'POST',
+            'callback'            => 'voicero_cancel_order_rest',
+            'permission_callback' => '__return_true',
+        ]
+    );
+
+    // Register the returnOrder endpoint (for Node.js compatibility)
+    register_rest_route(
+        'voicero/v1',
+        '/returnOrder',
+        [
+            'methods'             => 'POST',
+            'callback'            => 'voicero_return_order_rest',
+            'permission_callback' => '__return_true',
+        ]
+    );
+
+    // Register cart management endpoints (for Node.js compatibility)
+    register_rest_route(
+        'voicero/v1',
+        '/addToCart',
+        [
+            'methods'             => 'POST',
+            'callback'            => 'voicero_add_to_cart_rest',
+            'permission_callback' => '__return_true',
+        ]
+    );
+
+    register_rest_route(
+        'voicero/v1',
+        '/removeFromCart',
+        [
+            'methods'             => 'POST',
+            'callback'            => 'voicero_remove_from_cart_rest',
+            'permission_callback' => '__return_true',
+        ]
+    );
+
+    register_rest_route(
+        'voicero/v1',
+        '/clearCart',
+        [
+            'methods'             => 'POST',
+            'callback'            => 'voicero_clear_cart_rest',
+            'permission_callback' => '__return_true',
+        ]
+    );
 });
+
+/**
+ * Initialize WooCommerce for REST API calls
+ */
+function voicero_init_woocommerce_for_rest() {
+    // Initialize WooCommerce session, customer, and cart properly for REST API
+    if (!defined('WC_ABSPATH')) {
+        include_once(WP_PLUGIN_DIR . '/woocommerce/includes/wc-cart-functions.php');
+        include_once(WP_PLUGIN_DIR . '/woocommerce/includes/wc-notice-functions.php');
+    }
+    
+    // Initialize session
+    if (is_null(WC()->session)) {
+        $session_class = apply_filters('woocommerce_session_handler', 'WC_Session_Handler');
+        WC()->session = new $session_class();
+        WC()->session->init();
+    }
+    
+    if (!WC()->session->has_session()) {
+        WC()->session->set_customer_session_cookie(true);
+    }
+    
+    // Initialize customer
+    if (is_null(WC()->customer)) {
+        WC()->customer = new WC_Customer(get_current_user_id(), true);
+    }
+    
+    // Ensure WooCommerce cart is available
+    if (is_null(WC()->cart)) {
+        WC()->initialize_cart();
+    }
+    
+    // Make sure cart is properly initialized
+    WC()->cart->get_cart_from_session();
+}
 
 function voicero_connect_proxy() {
     // Get the access key from options (server-side only)
@@ -626,7 +736,7 @@ function voicero_tts_proxy(WP_REST_Request $request) {
 
     /* 2. Forward to Voicero API ------------------------------------------- */
     $response = wp_remote_post(
-        'https://d37c011f0026.ngrok-free.app/api/tts',
+        'https://56b2c4656c5a.ngrok-free.app/api/tts',
         [
             'headers'   => [
                 'Authorization'            => 'Bearer ' . $access_key,
@@ -756,7 +866,7 @@ function voicero_whisper_proxy($request) {
     $body .= "--$boundary--\r\n";
     
     // Send request to local API
-    $response = wp_remote_post('https://d37c011f0026.ngrok-free.app/api/whisper', [
+    $response = wp_remote_post('https://56b2c4656c5a.ngrok-free.app/api/whisper', [
         'headers' => [
             'Authorization' => 'Bearer ' . $access_key,
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
@@ -862,7 +972,7 @@ function voicero_support_proxy($request) {
     );
     
     // Forward to support API
-    $response = wp_remote_post('https://d37c011f0026.ngrok-free.app/api/support/help', [
+    $response = wp_remote_post('https://56b2c4656c5a.ngrok-free.app/api/support/help', [
         'headers' => [
             'Authorization' => 'Bearer ' . $access_key,
             'Content-Type' => 'application/json',
@@ -1989,7 +2099,7 @@ function voicero_get_ai_history_ajax() {
 
     // 7) Make the API request
     // Allow the API base URL to be configured via constant
-    $api_base = defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://d37c011f0026.ngrok-free.app/api';
+    $api_base = defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://56b2c4656c5a.ngrok-free.app/api';
     $endpoint  = trailingslashit($api_base) . 'aiHistory';
 
     // Log the request data for debugging
@@ -4124,6 +4234,36 @@ function voicero_get_cart_rest($request) {
         ], 400);
     }
     
+    // Initialize WooCommerce session, customer, and cart properly for REST API
+    if (!defined('WC_ABSPATH')) {
+        include_once(WP_PLUGIN_DIR . '/woocommerce/includes/wc-cart-functions.php');
+        include_once(WP_PLUGIN_DIR . '/woocommerce/includes/wc-notice-functions.php');
+    }
+    
+    // Initialize session
+    if (is_null(WC()->session)) {
+        $session_class = apply_filters('woocommerce_session_handler', 'WC_Session_Handler');
+        WC()->session = new $session_class();
+        WC()->session->init();
+    }
+    
+    if (!WC()->session->has_session()) {
+        WC()->session->set_customer_session_cookie(true);
+    }
+    
+    // Initialize customer
+    if (is_null(WC()->customer)) {
+        WC()->customer = new WC_Customer(get_current_user_id(), true);
+    }
+    
+    // Ensure WooCommerce cart is available
+    if (is_null(WC()->cart)) {
+        WC()->initialize_cart();
+    }
+    
+    // Make sure cart is properly initialized
+    WC()->cart->get_cart_from_session();
+    
     // Get cart data
     $cart = WC()->cart;
     
@@ -4225,4 +4365,715 @@ function voicero_debug_auth_rest($request) {
             'is_ssl' => is_ssl()
         ]
     ], 200);
+}
+
+/**
+ * REST API callback for getting orders
+ */
+function voicero_get_orders_rest($request) {
+    // Check if WooCommerce is active
+    if (!class_exists('WooCommerce')) {
+        return new WP_REST_Response(['error' => 'WooCommerce is not active'], 400);
+    }
+    
+    // Get parameters
+    $days = $request->get_param('days') ?: 30;
+    $days = max(1, min($days, 90)); // Limit between 1 and 90 days
+    $email = $request->get_param('email');
+    
+    try {
+        // Calculate date from X days ago
+        $date_from = new DateTime();
+        $date_from->modify("-{$days} days");
+        
+        // Base query parameters for WooCommerce orders
+        $args = array(
+            'limit' => 100,
+            'date_created' => '>=' . $date_from->format('Y-m-d'),
+            'orderby' => 'date',
+            'order' => 'DESC',
+            'status' => array('completed', 'processing', 'on-hold', 'pending', 'failed', 'refunded', 'cancelled')
+        );
+        
+        // If email is provided, filter by customer email
+        if (!empty($email)) {
+            // First try to find user by email
+            $user = get_user_by('email', $email);
+            if ($user) {
+                $args['customer_id'] = $user->ID;
+            } else {
+                // If no user found, filter by billing email in meta query
+                $args['meta_query'] = array(
+                    array(
+                        'key' => '_billing_email',
+                        'value' => $email,
+                        'compare' => '='
+                    )
+                );
+            }
+        } else {
+            // If no email specified, try to get current user's orders
+            $current_user_id = get_current_user_id();
+            if ($current_user_id > 0) {
+                $args['customer_id'] = $current_user_id;
+            } else {
+                // For guests/testing, return all recent orders (admin/dev access)
+                if (!current_user_can('manage_options')) {
+                    return new WP_REST_Response(['error' => 'Email parameter required for guest access'], 400);
+                }
+            }
+        }
+        
+        // Create the query
+        $orders_query = new WC_Order_Query($args);
+        $orders = $orders_query->get_orders();
+        
+        if (empty($orders)) {
+            return new WP_REST_Response([], 200);
+        }
+        
+        // Format orders for response
+        $formatted_orders = array();
+        foreach ($orders as $order) {
+            $formatted_orders[] = array(
+                'id' => $order->get_id(),
+                'number' => $order->get_order_number(),
+                'status' => $order->get_status(),
+                'date_created' => $order->get_date_created() ? $order->get_date_created()->format('c') : '',
+                'total' => $order->get_total(),
+                'currency' => $order->get_currency(),
+                'payment_method' => $order->get_payment_method_title(),
+                'billing' => array(
+                    'first_name' => $order->get_billing_first_name(),
+                    'last_name' => $order->get_billing_last_name(),
+                    'email' => $order->get_billing_email(),
+                )
+            );
+        }
+        
+        return new WP_REST_Response($formatted_orders, 200);
+    } catch (Exception $e) {
+        return new WP_REST_Response(['error' => 'Error fetching orders: ' . $e->getMessage()], 500);
+    }
+}
+
+/**
+ * REST API callback for tracking/verifying a specific order
+ */
+function voicero_track_order_rest($request) {
+    // Check if WooCommerce is active
+    if (!class_exists('WooCommerce')) {
+        return new WP_REST_Response(['error' => 'WooCommerce is not active'], 400);
+    }
+    
+    // Get required parameters
+    $order_id = $request->get_param('order_id');
+    $email = $request->get_param('email');
+    
+    if (empty($order_id)) {
+        return new WP_REST_Response(['error' => 'Order ID is required'], 400);
+    }
+    
+    if (empty($email)) {
+        return new WP_REST_Response(['error' => 'Email is required'], 400);
+    }
+    
+    try {
+        // Try to get the order
+        $order = wc_get_order($order_id);
+        if (!$order) {
+            // Try to find by looking up using get_posts
+            $args = array(
+                'post_type' => 'shop_order',
+                'post_status' => 'any',
+                'posts_per_page' => 1,
+                's' => $order_id,
+            );
+            $order_posts = get_posts($args);
+            
+            if (!empty($order_posts)) {
+                $order = wc_get_order($order_posts[0]->ID);
+            }
+        }
+        
+        if (!$order) {
+            return new WP_REST_Response(['error' => 'Order not found'], 404);
+        }
+        
+        // Get current user ID
+        $current_user_id = get_current_user_id();
+        $order_user_id = $order->get_user_id();
+        
+        // CASE 1: If logged in and order belongs to user, allow it
+        if ($current_user_id > 0 && $order_user_id == $current_user_id) {
+            return new WP_REST_Response([
+                'message' => 'Order verified by user account',
+                'verified' => true,
+                'order' => [
+                    'id' => $order->get_id(),
+                    'number' => $order->get_order_number(),
+                    'status' => $order->get_status(),
+                    'date_created' => $order->get_date_created() ? $order->get_date_created()->format('c') : '',
+                    'total' => $order->get_total(),
+                    'currency' => $order->get_currency(),
+                    'payment_method' => $order->get_payment_method_title(),
+                    'billing' => [
+                        'first_name' => $order->get_billing_first_name(),
+                        'last_name' => $order->get_billing_last_name(),
+                        'email' => $order->get_billing_email(),
+                    ],
+                    'shipping' => [
+                        'first_name' => $order->get_shipping_first_name(),
+                        'last_name' => $order->get_shipping_last_name(),
+                        'address_1' => $order->get_shipping_address_1(),
+                        'city' => $order->get_shipping_city(),
+                        'state' => $order->get_shipping_state(),
+                        'postcode' => $order->get_shipping_postcode(),
+                        'country' => $order->get_shipping_country(),
+                    ]
+                ]
+            ], 200);
+        }
+        
+        // CASE 2: Verify by email
+        $billing_email = $order->get_billing_email();
+        
+        // Test/development order handling
+        if (empty($billing_email) && (current_user_can('manage_options') || strpos($email, 'wpengine') !== false)) {
+            return new WP_REST_Response([
+                'message' => 'Test order verified',
+                'verified' => true,
+                'order' => [
+                    'id' => $order->get_id(),
+                    'number' => $order->get_order_number(),
+                    'status' => $order->get_status(),
+                    'total' => $order->get_total(),
+                ]
+            ], 200);
+        }
+        
+        // Regular email verification
+        if (!empty($billing_email) && $billing_email === $email) {
+            return new WP_REST_Response([
+                'message' => 'Order verified by email',
+                'verified' => true,
+                'order' => [
+                    'id' => $order->get_id(),
+                    'number' => $order->get_order_number(),
+                    'status' => $order->get_status(),
+                    'date_created' => $order->get_date_created() ? $order->get_date_created()->format('c') : '',
+                    'total' => $order->get_total(),
+                    'currency' => $order->get_currency(),
+                    'payment_method' => $order->get_payment_method_title(),
+                    'billing' => [
+                        'first_name' => $order->get_billing_first_name(),
+                        'last_name' => $order->get_billing_last_name(),
+                        'email' => $order->get_billing_email(),
+                    ]
+                ]
+            ], 200);
+        }
+        
+        return new WP_REST_Response(['error' => 'Email does not match order', 'verified' => false], 403);
+        
+    } catch (Exception $e) {
+        return new WP_REST_Response(['error' => 'Error verifying order: ' . $e->getMessage()], 500);
+    }
+}
+
+/**
+ * REST API callback for canceling an order
+ */
+function voicero_cancel_order_rest($request) {
+    // Check if WooCommerce is active
+    if (!class_exists('WooCommerce')) {
+        return new WP_REST_Response(['error' => 'WooCommerce is not active'], 400);
+    }
+    
+    // Get required parameters
+    $order_id = $request->get_param('order_id');
+    $email = $request->get_param('email');
+    
+    if (empty($order_id)) {
+        return new WP_REST_Response(['error' => 'Order ID is required'], 400);
+    }
+    
+    if (empty($email)) {
+        return new WP_REST_Response(['error' => 'Email is required'], 400);
+    }
+    
+    try {
+        // Try to get the order
+        $order = wc_get_order($order_id);
+        if (!$order) {
+            // Try to find by looking up using get_posts
+            $args = array(
+                'post_type' => 'shop_order',
+                'post_status' => 'any',
+                'posts_per_page' => 1,
+                's' => $order_id,
+            );
+            $order_posts = get_posts($args);
+            
+            if (!empty($order_posts)) {
+                $order = wc_get_order($order_posts[0]->ID);
+            }
+        }
+        
+        if (!$order) {
+            return new WP_REST_Response(['error' => 'Order not found'], 404);
+        }
+        
+        // Verify order belongs to customer
+        $billing_email = $order->get_billing_email();
+        if ($billing_email !== $email) {
+            return new WP_REST_Response(['error' => 'Email does not match order'], 403);
+        }
+        
+        // Check if order status allows cancellation
+        $status = $order->get_status();
+        $cancelable_statuses = apply_filters('voicero_cancelable_order_statuses', [
+            'pending', 'processing', 'on-hold', 'failed'
+        ]);
+        
+        if (!in_array($status, $cancelable_statuses)) {
+            return new WP_REST_Response([
+                'error' => 'This order cannot be cancelled due to its current status: ' . wc_get_order_status_name($status)
+            ], 400);
+        }
+        
+        // Process the cancellation
+        $order->update_status('cancelled', 'Order cancelled by customer via API');
+        $order->save();
+        
+        return new WP_REST_Response([
+            'message' => 'Order cancelled successfully',
+            'order_id' => $order->get_id(),
+            'status' => $order->get_status()
+        ], 200);
+        
+    } catch (Exception $e) {
+        return new WP_REST_Response(['error' => 'Error cancelling order: ' . $e->getMessage()], 500);
+    }
+}
+
+/**
+ * REST API callback for initiating order return
+ */
+function voicero_return_order_rest($request) {
+    // Check if WooCommerce is active
+    if (!class_exists('WooCommerce')) {
+        return new WP_REST_Response(['error' => 'WooCommerce is not active'], 400);
+    }
+    
+    // Get required parameters
+    $order_id = $request->get_param('order_id');
+    $email = $request->get_param('email');
+    $return_type = $request->get_param('return_type') ?: 'refund';
+    $reason = $request->get_param('reason') ?: 'Customer requested return';
+    
+    if (empty($order_id)) {
+        return new WP_REST_Response(['error' => 'Order ID is required'], 400);
+    }
+    
+    if (empty($email)) {
+        return new WP_REST_Response(['error' => 'Email is required'], 400);
+    }
+    
+    try {
+        // Try to get the order
+        $order = wc_get_order($order_id);
+        if (!$order) {
+            return new WP_REST_Response(['error' => 'Order not found'], 404);
+        }
+        
+        // Verify order belongs to customer
+        $billing_email = $order->get_billing_email();
+        if ($billing_email !== $email) {
+            return new WP_REST_Response(['error' => 'Email does not match order'], 403);
+        }
+        
+        // Check if order status allows returns
+        $status = $order->get_status();
+        $returnable_statuses = apply_filters('voicero_returnable_order_statuses', [
+            'completed', 'processing', 'on-hold'
+        ]);
+        
+        if (!in_array($status, $returnable_statuses)) {
+            return new WP_REST_Response([
+                'error' => 'This order is not eligible for return due to its current status: ' . wc_get_order_status_name($status)
+            ], 400);
+        }
+        
+        // Create return request
+        $return_request_id = 'return_' . uniqid();
+        $return_data = [
+            'id' => $return_request_id,
+            'date_requested' => current_time('mysql'),
+            'status' => 'pending',
+            'type' => $return_type,
+            'reason' => $reason,
+            'customer_email' => $email
+        ];
+        
+        // Save return request to order meta
+        $existing_returns = $order->get_meta('_voicero_return_requests', true);
+        if (empty($existing_returns) || !is_array($existing_returns)) {
+            $existing_returns = [];
+        }
+        $existing_returns[] = $return_data;
+        $order->update_meta_data('_voicero_return_requests', $existing_returns);
+        
+        // Add return request note to the order
+        $note = sprintf(
+            'Return request (%s) initiated by customer via API. Reason: %s',
+            $return_type,
+            $reason
+        );
+        $order->add_order_note($note);
+        $order->save();
+        
+        return new WP_REST_Response([
+            'message' => 'Return request submitted successfully',
+            'return_id' => $return_request_id,
+            'order_id' => $order->get_id(),
+            'status' => 'pending'
+        ], 200);
+        
+    } catch (Exception $e) {
+        return new WP_REST_Response(['error' => 'Error processing return request: ' . $e->getMessage()], 500);
+    }
+}
+
+/**
+ * REST API callback for adding item to cart
+ */
+function voicero_add_to_cart_rest($request) {
+    // Check if WooCommerce is active
+    if (!class_exists('WooCommerce')) {
+        return new WP_REST_Response(['error' => 'WooCommerce is not active'], 400);
+    }
+    
+    // Get parameters
+    $product_id = $request->get_param('product_id');
+    $product_name = $request->get_param('product_name');
+    $sku = $request->get_param('sku');
+    $quantity = $request->get_param('quantity') ?: 1;
+    $variation_id = $request->get_param('variation_id') ?: 0;
+    
+    // Must have at least one identifier
+    if (empty($product_id) && empty($product_name) && empty($sku)) {
+        return new WP_REST_Response(['error' => 'Product ID, product name, or SKU is required'], 400);
+    }
+    
+    try {
+        // Initialize WooCommerce session, customer, and cart properly for REST API
+        if (!defined('WC_ABSPATH')) {
+            include_once(WP_PLUGIN_DIR . '/woocommerce/includes/wc-cart-functions.php');
+            include_once(WP_PLUGIN_DIR . '/woocommerce/includes/wc-notice-functions.php');
+        }
+        
+        // Initialize session
+        if (is_null(WC()->session)) {
+            $session_class = apply_filters('woocommerce_session_handler', 'WC_Session_Handler');
+            WC()->session = new $session_class();
+            WC()->session->init();
+        }
+        
+        if (!WC()->session->has_session()) {
+            WC()->session->set_customer_session_cookie(true);
+        }
+        
+        // Initialize customer
+        if (is_null(WC()->customer)) {
+            WC()->customer = new WC_Customer(get_current_user_id(), true);
+        }
+        
+        // Ensure WooCommerce cart is available
+        if (is_null(WC()->cart)) {
+            WC()->initialize_cart();
+        }
+        
+        // Make sure cart is properly initialized
+        WC()->cart->get_cart_from_session();
+        
+        $product = null;
+        
+        // Method 1: Find by product ID
+        if (!empty($product_id)) {
+            $product = wc_get_product($product_id);
+        }
+        
+        // Method 2: Find by SKU
+        if (!$product && !empty($sku)) {
+            $product_id = wc_get_product_id_by_sku($sku);
+            if ($product_id) {
+                $product = wc_get_product($product_id);
+            }
+        }
+        
+        // Method 3: Find by product name (search)
+        if (!$product && !empty($product_name)) {
+            $args = array(
+                'post_type' => 'product',
+                'post_status' => 'publish',
+                'posts_per_page' => 5,
+                's' => $product_name,
+                'meta_query' => array(
+                    array(
+                        'key' => '_stock_status',
+                        'value' => 'instock',
+                        'compare' => '='
+                    )
+                )
+            );
+            
+            $products = get_posts($args);
+            
+            if (empty($products)) {
+                // Try broader search without stock status
+                $args = array(
+                    'post_type' => 'product',
+                    'post_status' => 'publish',
+                    'posts_per_page' => 5,
+                    's' => $product_name
+                );
+                $products = get_posts($args);
+            }
+            
+            if (!empty($products)) {
+                // Return multiple options if more than one found
+                if (count($products) > 1) {
+                    $product_options = [];
+                    foreach ($products as $prod) {
+                        $wc_product = wc_get_product($prod->ID);
+                        $product_options[] = [
+                            'id' => $wc_product->get_id(),
+                            'name' => $wc_product->get_name(),
+                            'price' => $wc_product->get_price(),
+                            'sku' => $wc_product->get_sku(),
+                            'in_stock' => $wc_product->is_in_stock()
+                        ];
+                    }
+                    
+                    return new WP_REST_Response([
+                        'message' => 'Multiple products found. Please specify which one:',
+                        'products' => $product_options
+                    ], 200);
+                }
+                
+                // Use the first (best match) product
+                $product = wc_get_product($products[0]->ID);
+                $product_id = $product->get_id();
+            }
+        }
+        
+        if (!$product) {
+            return new WP_REST_Response(['error' => 'Product not found'], 404);
+        }
+        
+        // Check if product is purchasable
+        if (!$product->is_purchasable()) {
+            return new WP_REST_Response(['error' => 'Product is not available for purchase'], 400);
+        }
+        
+        // Check stock status
+        if (!$product->is_in_stock()) {
+            return new WP_REST_Response(['error' => 'Product is out of stock'], 400);
+        }
+        
+        // Add item to cart
+        $cart_item_key = WC()->cart->add_to_cart($product_id, $quantity, $variation_id);
+        
+        if (!$cart_item_key) {
+            return new WP_REST_Response(['error' => 'Could not add item to cart'], 400);
+        }
+        
+        // Save cart to session
+        WC()->cart->set_session();
+        WC()->session->save_data();
+        
+        // Get updated cart data
+        $cart = WC()->cart;
+        $cart_data = [
+            'message' => 'Item added to cart successfully',
+            'cart_item_key' => $cart_item_key,
+            'cart_total' => $cart->get_total(),
+            'cart_count' => $cart->get_cart_contents_count(),
+            'item_count' => $quantity,
+            'product' => [
+                'id' => $product->get_id(),
+                'name' => $product->get_name(),
+                'price' => $product->get_price(),
+                'sku' => $product->get_sku()
+            ]
+        ];
+        
+        return new WP_REST_Response($cart_data, 200);
+        
+    } catch (Exception $e) {
+        return new WP_REST_Response(['error' => 'Error adding item to cart: ' . $e->getMessage()], 500);
+    }
+}
+
+/**
+ * REST API callback for removing item from cart
+ */
+function voicero_remove_from_cart_rest($request) {
+    // Check if WooCommerce is active
+    if (!class_exists('WooCommerce')) {
+        return new WP_REST_Response(['error' => 'WooCommerce is not active'], 400);
+    }
+    
+    // Get parameters
+    $cart_item_key = $request->get_param('cart_item_key');
+    $product_id = $request->get_param('product_id');
+    $product_name = $request->get_param('product_name');
+    $sku = $request->get_param('sku');
+    
+    if (empty($cart_item_key) && empty($product_id) && empty($product_name) && empty($sku)) {
+        return new WP_REST_Response(['error' => 'Cart item key, product ID, product name, or SKU is required'], 400);
+    }
+    
+    try {
+        // Initialize WooCommerce session and cart properly
+        if (is_null(WC()->session)) {
+            $session_class = apply_filters('woocommerce_session_handler', 'WC_Session_Handler');
+            WC()->session = new $session_class();
+            WC()->session->init();
+        }
+        
+        if (!WC()->session->has_session()) {
+            WC()->session->set_customer_session_cookie(true);
+        }
+        
+        // Initialize customer
+        if (is_null(WC()->customer)) {
+            WC()->customer = new WC_Customer(get_current_user_id(), true);
+        }
+        
+        // Ensure WooCommerce cart is available
+        if (is_null(WC()->cart)) {
+            WC()->initialize_cart();
+        }
+        
+        // Make sure cart is properly initialized
+        WC()->cart->get_cart_from_session();
+        
+        $removed = false;
+        $target_product_id = null;
+        
+        // Method 1: Remove by cart item key (preferred - most specific)
+        if (!empty($cart_item_key)) {
+            $removed = WC()->cart->remove_cart_item($cart_item_key);
+        }
+        // Method 2: Find product ID and remove
+        else {
+            // Find by product ID
+            if (!empty($product_id)) {
+                $target_product_id = $product_id;
+            }
+            // Find by SKU
+            else if (!empty($sku)) {
+                $target_product_id = wc_get_product_id_by_sku($sku);
+            }
+            // Find by product name
+            else if (!empty($product_name)) {
+                $args = array(
+                    'post_type' => 'product',
+                    'post_status' => 'publish',
+                    'posts_per_page' => 1,
+                    's' => $product_name
+                );
+                $products = get_posts($args);
+                
+                if (!empty($products)) {
+                    $target_product_id = $products[0]->ID;
+                }
+            }
+            
+            // Remove all instances of the product from cart
+            if ($target_product_id) {
+                foreach (WC()->cart->get_cart() as $key => $cart_item) {
+                    if ($cart_item['product_id'] == $target_product_id) {
+                        WC()->cart->remove_cart_item($key);
+                        $removed = true;
+                    }
+                }
+            }
+        }
+        
+        if (!$removed) {
+            return new WP_REST_Response(['error' => 'Item not found in cart or could not be removed'], 404);
+        }
+        
+        // Save cart to session
+        WC()->cart->set_session();
+        WC()->session->save_data();
+        
+        // Get updated cart data
+        $cart = WC()->cart;
+        $cart_data = [
+            'message' => 'Item removed from cart successfully',
+            'cart_total' => $cart->get_total(),
+            'cart_count' => $cart->get_cart_contents_count()
+        ];
+        
+        return new WP_REST_Response($cart_data, 200);
+        
+    } catch (Exception $e) {
+        return new WP_REST_Response(['error' => 'Error removing item from cart: ' . $e->getMessage()], 500);
+    }
+}
+
+/**
+ * REST API callback for clearing entire cart
+ */
+function voicero_clear_cart_rest($request) {
+    // Check if WooCommerce is active
+    if (!class_exists('WooCommerce')) {
+        return new WP_REST_Response(['error' => 'WooCommerce is not active'], 400);
+    }
+    
+    try {
+        // Initialize WooCommerce session and cart properly
+        if (is_null(WC()->session)) {
+            $session_class = apply_filters('woocommerce_session_handler', 'WC_Session_Handler');
+            WC()->session = new $session_class();
+            WC()->session->init();
+        }
+        
+        if (!WC()->session->has_session()) {
+            WC()->session->set_customer_session_cookie(true);
+        }
+        
+        // Initialize customer
+        if (is_null(WC()->customer)) {
+            WC()->customer = new WC_Customer(get_current_user_id(), true);
+        }
+        
+        // Ensure WooCommerce cart is available
+        if (is_null(WC()->cart)) {
+            WC()->initialize_cart();
+        }
+        
+        // Make sure cart is properly initialized
+        WC()->cart->get_cart_from_session();
+        
+        // Clear the entire cart
+        WC()->cart->empty_cart();
+        
+        // Save cart to session
+        WC()->cart->set_session();
+        WC()->session->save_data();
+        
+        return new WP_REST_Response([
+            'message' => 'Cart cleared successfully',
+            'cart_total' => '0.00',
+            'cart_count' => 0
+        ], 200);
+        
+    } catch (Exception $e) {
+        return new WP_REST_Response(['error' => 'Error clearing cart: ' . $e->getMessage()], 500);
+    }
 }

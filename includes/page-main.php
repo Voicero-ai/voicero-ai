@@ -64,7 +64,7 @@ function voicero_enqueue_scripts() {
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('voicero_frontend_nonce'),
             'restUrl' => rest_url('voicero/v1/'),
-            'apiUrl' => defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://d37c011f0026.ngrok-free.app/api'
+            'apiUrl' => defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://56b2c4656c5a.ngrok-free.app/api'
         ]);
         // Get access key securely
         $access_key = voicero_get_access_key();

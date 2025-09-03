@@ -33,7 +33,7 @@ function voicero_activate_plugin() {
 }
 
 // Define the API base URL
-define('VOICERO_API_URL', 'https://d37c011f0026.ngrok-free.app/api');
+define('VOICERO_API_URL', 'https://56b2c4656c5a.ngrok-free.app/api');
 // Define the plugin version
 define('VOICERO_VERSION', '1.0');
 
@@ -1207,7 +1207,7 @@ function voicero_render_admin_page() {
     
     // Generate the connection URL with nonce
     $connect_url = wp_nonce_url(
-        "https://d37c011f0026.ngrok-free.app/app/connect?site_url={$encoded_site_url}&redirect_url={$encoded_admin_url}",
+        "https://56b2c4656c5a.ngrok-free.app/app/connect?site_url={$encoded_site_url}&redirect_url={$encoded_admin_url}",
         'voicero_connect'
     );
 
@@ -1314,7 +1314,7 @@ function voicero_admin_enqueue_assets($hook_suffix) {
             'ajaxUrl'   => admin_url('admin-ajax.php'),
             'nonce'     => wp_create_nonce('voicero_ajax_nonce'),
             'accessKey' => $access_key,
-            'apiUrl'    => defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://d37c011f0026.ngrok-free.app/api',
+            'apiUrl'    => defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://56b2c4656c5a.ngrok-free.app/api',
             'websiteId' => get_option('voicero_website_id', '')
         ]
     );
