@@ -743,7 +743,7 @@
     var apiUrl =
       typeof voiceroConfig !== "undefined" && voiceroConfig.apiUrl
         ? voiceroConfig.apiUrl
-        : "https://56b2c4656c5a.ngrok-free.app/api";
+        : "https://www.voicero.ai/api";
 
     // Get access key from config
     var accessKey =
@@ -905,8 +905,7 @@
     if (websiteId) {
       // Set the subscription URL
       var subscriptionUrl =
-        "https://56b2c4656c5a.ngrok-free.app/app/websites/website?id=" +
-        websiteId;
+        "https://www.voicero.ai/app/websites/website?id=" + websiteId;
       $("#update-subscription-link").attr("href", subscriptionUrl);
     }
   }
@@ -1005,9 +1004,8 @@
 
       // ALWAYS create the button, even without websiteId
       var subscriptionUrl = websiteId
-        ? "https://56b2c4656c5a.ngrok-free.app/app/websites/website?id=" +
-          websiteId
-        : "https://56b2c4656c5a.ngrok-free.app/app/websites";
+        ? "https://www.voicero.ai/app/websites/website?id=" + websiteId
+        : "https://www.voicero.ai/app/websites";
 
       var button = $("<a></a>")
         .attr("href", subscriptionUrl)

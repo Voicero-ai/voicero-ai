@@ -33,7 +33,7 @@ function voicero_activate_plugin() {
 }
 
 // Define the API base URL
-define('VOICERO_API_URL', 'https://56b2c4656c5a.ngrok-free.app/api');
+define('VOICERO_API_URL', 'https://www.voicero.ai/api');
 // Define the plugin version
 define('VOICERO_VERSION', '1.0');
 
@@ -334,7 +334,7 @@ function voicero_sync_content() {
     
     // Log the data being sent to external API
     error_log('=== SENDING TO EXTERNAL API ===');
-    error_log('API URL: http://localhost:3001/api/wordpress/sync');
+    error_log('API URL: https://train.voicero.ai/api/wordpress/sync');
     error_log('Access Key: ' . substr($access_key, 0, 20) . '...');
     error_log('Headers: ' . json_encode([
         'Authorization' => 'Bearer ' . substr($access_key, 0, 20) . '...',
@@ -350,7 +350,7 @@ function voicero_sync_content() {
 
     try {
         // 1. Sync the content
-        $sync_response = wp_remote_post('http://localhost:3001/api/wordpress/sync', [
+        $sync_response = wp_remote_post('https://train.voicero.ai/api/wordpress/sync', [
             'headers' => [
                 'Authorization' => 'Bearer ' . $access_key,
                 'Content-Type' => 'application/json',
@@ -437,11 +437,11 @@ function voicero_vectorize_content() {
 
     // Log vectorize API call
     error_log('=== CALLING VECTORIZE API (FIRE AND FORGET) ===');
-    error_log('Vectorize URL: http://localhost:3001/api/wordpress/vectorize');
+    error_log('Vectorize URL: https://train.voicero.ai/api/wordpress/vectorize');
     error_log('=== END VECTORIZE LOG ===');
     
     // Fire and forget approach - call API with short timeout and non-blocking
-    wp_remote_post('http://localhost:3001/api/wordpress/vectorize', [
+    wp_remote_post('https://train.voicero.ai/api/wordpress/vectorize', [
         'headers' => [
             'Authorization' => 'Bearer ' . $access_key,
             'Content-Type' => 'application/json',
@@ -1207,7 +1207,7 @@ function voicero_render_admin_page() {
     
     // Generate the connection URL with nonce
     $connect_url = wp_nonce_url(
-        "https://56b2c4656c5a.ngrok-free.app/app/connect?site_url={$encoded_site_url}&redirect_url={$encoded_admin_url}",
+        "https://www.voicero.ai/app/connect?site_url={$encoded_site_url}&redirect_url={$encoded_admin_url}",
         'voicero_connect'
     );
 
@@ -1314,7 +1314,7 @@ function voicero_admin_enqueue_assets($hook_suffix) {
             'ajaxUrl'   => admin_url('admin-ajax.php'),
             'nonce'     => wp_create_nonce('voicero_ajax_nonce'),
             'accessKey' => $access_key,
-            'apiUrl'    => defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://56b2c4656c5a.ngrok-free.app/api',
+            'apiUrl'    => defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://www.voicero.ai/api',
             'websiteId' => get_option('voicero_website_id', '')
         ]
     );

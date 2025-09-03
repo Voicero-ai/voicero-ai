@@ -164,7 +164,7 @@ function voicero_news_enqueue_assets($hook_suffix) {
             'ajaxUrl'   => admin_url('admin-ajax.php'),
             'nonce'     => wp_create_nonce('voicero_ajax_nonce'),
             'accessKey' => voicero_get_access_key(),
-            'apiUrl'    => defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://56b2c4656c5a.ngrok-free.app/api',
+            'apiUrl'    => defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://www.voicero.ai/api',
             'websiteId' => get_option('voicero_website_id', ''),
             'strings' => [
                 'loadingError' => esc_html__('Error loading news data', 'voicero-ai'),
@@ -201,7 +201,7 @@ function voicero_get_news_data() {
 
     try {
         // Call the external news API endpoint with Bearer token auth
-        $response = wp_remote_post('https://56b2c4656c5a.ngrok-free.app/api/news', [
+        $response = wp_remote_post('https://www.voicero.ai/api/news', [
             'headers' => [
                 'Authorization' => 'Bearer ' . $access_key,
                 'Content-Type' => 'application/json',
@@ -272,7 +272,7 @@ function voicero_update_hot_status() {
     }
 
     try {
-        $response = wp_remote_post('https://56b2c4656c5a.ngrok-free.app/api/news/hot', [
+        $response = wp_remote_post('https://www.voicero.ai/api/news/hot', [
             'headers' => [
                 'Authorization' => 'Bearer ' . $access_key,
                 'Content-Type' => 'application/json',

@@ -556,9 +556,9 @@ jQuery(document).ready(function ($) {
           <h4 style="margin: 0 0 16px; color: #2271b1; font-size: 16px;">📊 Problem Resolution Summary</h4>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 16px;">
             <div style="text-align: center;">
-              <div style="font-size: 32px; font-weight: 700; color: #22c55e;">${
+              <div style="font-size: 32px; font-weight: 700; color: #22c55e;">${parseFloat(
                 rate.percent
-              }%</div>
+              ).toFixed(2)}%</div>
               <div style="color: #666; font-size: 14px;">Resolution Rate</div>
             </div>
             <div style="text-align: center;">
@@ -574,9 +574,9 @@ jQuery(document).ready(function ($) {
               <div style="color: #666; font-size: 14px;">Need Work</div>
             </div>
             <div style="text-align: center;">
-              <div style="font-size: 32px; font-weight: 700; color: #8b5cf6;">${
+              <div style="font-size: 32px; font-weight: 700; color: #8b5cf6;">${parseFloat(
                 overview.avg_messages_per_thread
-              }</div>
+              ).toFixed(2)}</div>
               <div style="color: #666; font-size: 14px;">Avg Messages</div>
             </div>
           </div>
@@ -594,25 +594,29 @@ jQuery(document).ready(function ($) {
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
           <div style="text-align: center;">
             <div style="font-size: 32px; font-weight: 700; color: #22c55e;" class="analytics-revenue-amount">
-              $${
+              $${parseFloat(
                 data.aiOverviewRevenue ? data.aiOverviewRevenue.amount || 0 : 0
-              }
+              ).toFixed(2)}
             </div>
             <div style="color: #666; font-size: 14px;">Revenue Added to Cart</div>
           </div>
           <div style="text-align: center;">
             <div style="font-size: 32px; font-weight: 700; color: #3b82f6;" class="analytics-text-chats">
-              ${globalStats ? globalStats.totalTextChats || 0 : 0}
+              ${parseFloat(
+                globalStats ? globalStats.totalTextChats || 0 : 0
+              ).toFixed(2)}
             </div>
             <div style="color: #666; font-size: 14px;">Text Chats</div>
           </div>
           <div style="text-align: center;">
             <div style="font-size: 32px; font-weight: 700; color: #8b5cf6;" class="analytics-voice-chats">
-              ${globalStats ? globalStats.totalVoiceChats || 0 : 0}
+              ${parseFloat(
+                globalStats ? globalStats.totalVoiceChats || 0 : 0
+              ).toFixed(2)}
             </div>
             <div style="color: #666; font-size: 14px;">Voice Chats</div>
           </div>
-          <div style="text-align: center;">
+          <div style="text-align: center; cursor: pointer; padding: 8px; border-radius: 8px; transition: background-color 0.2s;" class="action-section" data-action-type="cart" onmouseover="this.style.backgroundColor='#f9fafb'" onmouseout="this.style.backgroundColor='transparent'">
             <div style="font-size: 32px; font-weight: 700; color: #f59e0b;" class="analytics-cart-actions">
               ${
                 data.actionConversations
@@ -623,8 +627,9 @@ jQuery(document).ready(function ($) {
               }
             </div>
             <div style="color: #666; font-size: 14px;">Cart Actions</div>
+            <div style="color: #3b82f6; font-size: 12px; margin-top: 4px;">Click to view conversations</div>
           </div>
-          <div style="text-align: center;">
+          <div style="text-align: center; cursor: pointer; padding: 8px; border-radius: 8px; transition: background-color 0.2s;" class="action-section" data-action-type="orders" onmouseover="this.style.backgroundColor='#f9fafb'" onmouseout="this.style.backgroundColor='transparent'">
             <div style="font-size: 32px; font-weight: 700; color: #10b981;" class="analytics-order-actions">
               ${
                 data.actionConversations
@@ -635,8 +640,9 @@ jQuery(document).ready(function ($) {
               }
             </div>
             <div style="color: #666; font-size: 14px;">Order Actions</div>
+            <div style="color: #3b82f6; font-size: 12px; margin-top: 4px;">Click to view conversations</div>
           </div>
-          <div style="text-align: center;">
+          <div style="text-align: center; cursor: pointer; padding: 8px; border-radius: 8px; transition: background-color 0.2s;" class="action-section" data-action-type="movement" onmouseover="this.style.backgroundColor='#f9fafb'" onmouseout="this.style.backgroundColor='transparent'">
             <div style="font-size: 32px; font-weight: 700; color: #ef4444;" class="analytics-movement-actions">
               ${
                 data.actionConversations
@@ -647,6 +653,7 @@ jQuery(document).ready(function ($) {
               }
             </div>
             <div style="color: #666; font-size: 14px;">Movement Actions</div>
+            <div style="color: #3b82f6; font-size: 12px; margin-top: 4px;">Click to view conversations</div>
           </div>
         </div>
       </div>
@@ -743,6 +750,93 @@ jQuery(document).ready(function ($) {
     html += `
       </div>
       
+      <!-- Separate Actions Section -->
+      <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 24px;">
+        <h4 style="margin: 0 0 16px; color: #2271b1; font-size: 16px;">🎯 Action Details</h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+          
+          <!-- Cart Actions -->
+          <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; cursor: pointer; transition: all 0.2s;" 
+               class="action-detail-section" data-action-type="cart" 
+               onmouseover="this.style.borderColor='#3b82f6'; this.style.transform='translateY(-2px)'" 
+               onmouseout="this.style.borderColor='#e5e7eb'; this.style.transform='translateY(0)'">
+            <div style="display: flex; align-items: center; margin-bottom: 8px;">
+              <div style="background: #fef3c7; color: #f59e0b; padding: 8px; border-radius: 6px; margin-right: 12px;">
+                🛒
+              </div>
+              <div>
+                <div style="font-size: 18px; font-weight: 600; color: #111827;">Cart Actions</div>
+                <div style="font-size: 14px; color: #6b7280;" class="cart-actions-count">
+                  ${
+                    data.actionConversations
+                      ? data.actionConversations.cart
+                        ? data.actionConversations.cart.length
+                        : 0
+                      : 0
+                  } conversations
+                </div>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #3b82f6;">Click to view conversations</div>
+            <div id="cart-conversations-list" style="display: none; margin-top: 12px; max-height: 200px; overflow-y: auto;"></div>
+          </div>
+          
+          <!-- Order Actions -->
+          <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; cursor: pointer; transition: all 0.2s;" 
+               class="action-detail-section" data-action-type="orders" 
+               onmouseover="this.style.borderColor='#10b981'; this.style.transform='translateY(-2px)'" 
+               onmouseout="this.style.borderColor='#e5e7eb'; this.style.transform='translateY(0)'">
+            <div style="display: flex; align-items: center; margin-bottom: 8px;">
+              <div style="background: #d1fae5; color: #10b981; padding: 8px; border-radius: 6px; margin-right: 12px;">
+                📦
+              </div>
+              <div>
+                <div style="font-size: 18px; font-weight: 600; color: #111827;">Order Actions</div>
+                <div style="font-size: 14px; color: #6b7280;" class="orders-actions-count">
+                  ${
+                    data.actionConversations
+                      ? data.actionConversations.orders
+                        ? data.actionConversations.orders.length
+                        : 0
+                      : 0
+                  } conversations
+                </div>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #10b981;">Click to view conversations</div>
+            <div id="orders-conversations-list" style="display: none; margin-top: 12px; max-height: 200px; overflow-y: auto;"></div>
+          </div>
+          
+          <!-- Movement Actions -->
+          <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; cursor: pointer; transition: all 0.2s;" 
+               class="action-detail-section" data-action-type="movement" 
+               onmouseover="this.style.borderColor='#ef4444'; this.style.transform='translateY(-2px)'" 
+               onmouseout="this.style.borderColor='#e5e7eb'; this.style.transform='translateY(0)'">
+            <div style="display: flex; align-items: center; margin-bottom: 8px;">
+              <div style="background: #fee2e2; color: #ef4444; padding: 8px; border-radius: 6px; margin-right: 12px;">
+                🎯
+              </div>
+              <div>
+                <div style="font-size: 18px; font-weight: 600; color: #111827;">Movement Actions</div>
+                <div style="font-size: 14px; color: #6b7280;" class="movement-actions-count">
+                  ${
+                    data.actionConversations
+                      ? data.actionConversations.movement
+                        ? data.actionConversations.movement.length
+                        : 0
+                      : 0
+                  } conversations
+                </div>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #ef4444;">Click to view conversations</div>
+            <div id="movement-conversations-list" style="display: none; margin-top: 12px; max-height: 200px; overflow-y: auto;"></div>
+          </div>
+          
+        </div>
+      </div>
+      
+      
       <script>
         function toggleRecentQuestions() {
           const details = document.getElementById('recent-questions-details');
@@ -754,6 +848,89 @@ jQuery(document).ready(function ($) {
             details.style.display = 'none';
             text.textContent = 'Show Details';
           }
+        }
+        
+        // Store action conversations globally for access
+        window.actionDetailsData = ${JSON.stringify(
+          data.actionConversations || {}
+        )};
+        
+        // Add click handlers for action detail sections
+        setTimeout(function() {
+          const sections = document.querySelectorAll('.action-detail-section');
+          
+          sections.forEach(function(section) {
+            section.addEventListener('click', function(e) {
+              e.preventDefault();
+              e.stopPropagation();
+              const actionType = this.getAttribute('data-action-type');
+              
+              if (typeof window.toggleConversationsList === 'function') {
+                window.toggleConversationsList(actionType);
+              }
+            });
+          });
+        }, 500);
+        
+        function showActionConversations(actionType) {
+          const conversations = window.actionConversationsData[actionType] || [];
+          if (conversations.length === 0) {
+            alert('No conversations found for ' + actionType + ' actions.');
+            return;
+          }
+          
+          let html = '<div style="max-width: 800px; max-height: 600px; overflow-y: auto; padding: 20px;">';
+          html += '<h3 style="margin-bottom: 20px; color: #1f2937;">' + actionType.charAt(0).toUpperCase() + actionType.slice(1) + ' Action Conversations (' + conversations.length + ')</h3>';
+          
+          conversations.forEach(function(conv, index) {
+            const thread = conv.thread;
+            const actions = conv.actions;
+            
+            html += '<div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 16px; background: #f9fafb;">';
+            html += '<h4 style="margin: 0 0 12px 0; color: #374151;">Conversation ' + (index + 1) + '</h4>';
+            
+            if (actions && actions.length > 0) {
+              html += '<div style="margin-bottom: 12px; padding: 8px; background: #dbeafe; border-radius: 4px;">';
+              html += '<strong>Actions Taken:</strong><br>';
+              actions.forEach(function(action) {
+                html += '• ' + (action.actionType || 'Unknown action') + '<br>';
+              });
+              html += '</div>';
+            }
+            
+            if (thread && thread.messages) {
+              html += '<div style="max-height: 200px; overflow-y: auto; border: 1px solid #d1d5db; border-radius: 4px; padding: 8px; background: white;">';
+              thread.messages.forEach(function(msg) {
+                const isUser = msg.role === 'user';
+                html += '<div style="margin-bottom: 8px; padding: 6px; border-radius: 4px; background: ' + (isUser ? '#eff6ff' : '#f0fdf4') + ';">';
+                html += '<strong>' + (isUser ? 'User' : 'AI') + ':</strong> ' + (msg.content || '').substring(0, 200);
+                if (msg.content && msg.content.length > 200) html += '...';
+                html += '</div>';
+              });
+              html += '</div>';
+            }
+            
+            html += '</div>';
+          });
+          
+          html += '</div>';
+          
+          // Create modal to show conversations
+          const modal = document.createElement('div');
+          modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center;';
+          
+          const modalContent = document.createElement('div');
+          modalContent.style.cssText = 'background: white; border-radius: 8px; max-width: 90%; max-height: 90%; overflow: hidden; position: relative;';
+          modalContent.innerHTML = html + '<button onclick="this.closest(\\'div\\').style.display=\\'none\\'" style="position: absolute; top: 10px; right: 10px; background: #ef4444; color: white; border: none; border-radius: 4px; padding: 8px 12px; cursor: pointer;">Close</button>';
+          
+          modal.appendChild(modalContent);
+          document.body.appendChild(modal);
+          
+          modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+              modal.style.display = 'none';
+            }
+          });
         }
       </script>
     `;
@@ -970,7 +1147,7 @@ jQuery(document).ready(function ($) {
               ${
                 data.id
                   ? `
-                <a href="https://56b2c4656c5a.ngrok-free.app/app/websites/website?id=${data.id}" 
+                <a href="https://www.voicero.ai/app/websites/website?id=${data.id}" 
                    target="_blank" 
                    class="button button-primary open-control-panel"
                    style="
@@ -1332,12 +1509,12 @@ jQuery(document).ready(function ($) {
                           <span class="dashicons dashicons-chart-pie" style="color: #374151; font-size: 18px;"></span>
                         </div>
                         <div>
-                          <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Status</div>
+                          <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Plan</div>
                           <div style="font-size: 18px; font-weight: 600; color: #111827;">
-                            Active
+                            Live
                           </div>
                           <div style="font-size: 12px; color: #6b7280;">
-                            Full features enabled
+                            Free Plan
                           </div>
                         </div>
                       </div>
@@ -1370,7 +1547,7 @@ jQuery(document).ready(function ($) {
                             ${data.monthlyQueries || 0}
                           </div>
                           <div style="font-size: 12px; color: #6b7280;">
-                            / Unlimited
+                            / 1000
                           </div>
                         </div>
                       </div>
@@ -2152,38 +2329,52 @@ jQuery(document).ready(function ($) {
     if (detailedData.stats) {
       // Update statistics
       if (detailedData.stats.totalRedirects !== undefined) {
-        $(".analytics-redirects").text(detailedData.stats.totalRedirects);
+        $(".analytics-redirects").text(
+          parseFloat(detailedData.stats.totalRedirects).toFixed(2)
+        );
       }
 
       if (detailedData.stats.redirectRate !== undefined) {
         $(".analytics-redirect-rate").text(
-          Math.ceil(detailedData.stats.redirectRate) + "%"
+          parseFloat(detailedData.stats.redirectRate).toFixed(2) + "%"
         );
       }
 
       if (detailedData.stats.totalTextChats !== undefined) {
-        $(".analytics-text-chats").text(detailedData.stats.totalTextChats);
+        $(".analytics-text-chats").text(
+          parseFloat(detailedData.stats.totalTextChats).toFixed(2)
+        );
       }
 
       if (detailedData.stats.totalVoiceChats !== undefined) {
-        $(".analytics-voice-chats").text(detailedData.stats.totalVoiceChats);
+        $(".analytics-voice-chats").text(
+          parseFloat(detailedData.stats.totalVoiceChats).toFixed(2)
+        );
       }
 
       // Action statistics
       if (detailedData.stats.aiRedirects !== undefined) {
-        $(".action-redirects").text(detailedData.stats.aiRedirects);
+        $(".action-redirects").text(
+          parseFloat(detailedData.stats.aiRedirects).toFixed(2)
+        );
       }
 
       if (detailedData.stats.aiPurchases !== undefined) {
-        $(".action-purchases").text(detailedData.stats.aiPurchases);
+        $(".action-purchases").text(
+          parseFloat(detailedData.stats.aiPurchases).toFixed(2)
+        );
       }
 
       if (detailedData.stats.aiClicks !== undefined) {
-        $(".action-clicks").text(detailedData.stats.aiClicks);
+        $(".action-clicks").text(
+          parseFloat(detailedData.stats.aiClicks).toFixed(2)
+        );
       }
 
       if (detailedData.stats.aiScrolls !== undefined) {
-        $(".action-scrolls").text(detailedData.stats.aiScrolls);
+        $(".action-scrolls").text(
+          parseFloat(detailedData.stats.aiScrolls).toFixed(2)
+        );
       }
     }
 
@@ -2191,13 +2382,13 @@ jQuery(document).ready(function ($) {
     if (detailedData.globalStats) {
       if (detailedData.globalStats.totalTextChats !== undefined) {
         $(".analytics-text-chats").text(
-          detailedData.globalStats.totalTextChats
+          parseFloat(detailedData.globalStats.totalTextChats).toFixed(2)
         );
       }
 
       if (detailedData.globalStats.totalVoiceChats !== undefined) {
         $(".analytics-voice-chats").text(
-          detailedData.globalStats.totalVoiceChats
+          parseFloat(detailedData.globalStats.totalVoiceChats).toFixed(2)
         );
       }
     }
@@ -2208,7 +2399,7 @@ jQuery(document).ready(function ($) {
       detailedData.aiOverviewRevenue.amount !== undefined
     ) {
       $(".analytics-revenue-amount").text(
-        "$" + (detailedData.aiOverviewRevenue.amount || 0)
+        "$" + parseFloat(detailedData.aiOverviewRevenue.amount || 0).toFixed(2)
       );
     }
 
@@ -2232,7 +2423,246 @@ jQuery(document).ready(function ($) {
         );
       }
     }
+
+    // Update action conversations data and counts
+    if (detailedData.actionConversations) {
+      window.actionDetailsData = detailedData.actionConversations;
+
+      // Update action counts in the new Action Details section
+      if (detailedData.actionConversations.cart) {
+        $(".cart-actions-count").text(
+          detailedData.actionConversations.cart.length + " conversations"
+        );
+      }
+      if (detailedData.actionConversations.orders) {
+        $(".orders-actions-count").text(
+          detailedData.actionConversations.orders.length + " conversations"
+        );
+      }
+      if (detailedData.actionConversations.movement) {
+        $(".movement-actions-count").text(
+          detailedData.actionConversations.movement.length + " conversations"
+        );
+      }
+
+      // Add click handlers for action detail sections (remove existing first to avoid duplicates)
+      $(".action-detail-section")
+        .off("click")
+        .on("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          const actionType = $(this).data("action-type");
+          console.log("updateStats: Clicked action type:", actionType);
+          console.log(
+            "updateStats: actionDetailsData:",
+            window.actionDetailsData
+          );
+          if (window.toggleConversationsList) {
+            window.toggleConversationsList(actionType);
+          } else {
+            console.error("toggleConversationsList function not found!");
+          }
+        });
+    }
   }
+
+  // Function to toggle conversations list dropdown - Make it global
+  window.toggleConversationsList = function (actionType) {
+    const listElement = document.getElementById(
+      actionType + "-conversations-list"
+    );
+    const conversations = window.actionDetailsData[actionType] || [];
+
+    if (conversations.length === 0) {
+      alert("No conversations found for " + actionType + " actions.");
+      return;
+    }
+
+    if (!listElement) {
+      return;
+    }
+
+    // Toggle visibility
+    if (
+      listElement.style.display === "none" ||
+      listElement.style.display === ""
+    ) {
+      // Show the list
+      let html = "";
+      conversations.forEach(function (conv, index) {
+        // Handle the actionConversations structure: {thread: {...}, actions: [...]}
+        const thread = conv.thread || conv;
+        const threadId = thread.id || conv.threadId || "Unknown ID";
+        const actions = conv.actions || [];
+        const messageCount = thread.messages ? thread.messages.length : 0;
+        const actionTypeText =
+          actions.length > 0
+            ? actions[0].actionType || "Unknown action"
+            : "No actions";
+        const createdAt =
+          thread.messages && thread.messages[0] && thread.messages[0].createdAt
+            ? new Date(thread.messages[0].createdAt).toLocaleDateString()
+            : "Unknown date";
+
+        html +=
+          '<div style="border: 1px solid #d1d5db; border-radius: 4px; padding: 8px; margin-bottom: 6px; cursor: pointer; background: white; transition: background-color 0.2s;" ';
+        html +=
+          'class="conversation-item" data-conversation-index="' +
+          index +
+          '" data-action-type="' +
+          actionType +
+          '" ';
+        html +=
+          "onmouseover=\"this.style.backgroundColor='#f3f4f6'\" onmouseout=\"this.style.backgroundColor='white'\" ";
+        html +=
+          "onclick=\"showConversationMessages('" +
+          actionType +
+          "', " +
+          index +
+          ')">';
+        html +=
+          '<div style="font-weight: 600; font-size: 14px; color: #1f2937;">' +
+          threadId.substring(0, 8) +
+          "...</div>";
+        html +=
+          '<div style="font-size: 12px; color: #6b7280;">Actions: ' +
+          actions.length +
+          "</div>";
+        html +=
+          '<div style="font-size: 12px; color: #6b7280;">' +
+          messageCount +
+          " messages • " +
+          createdAt +
+          "</div>";
+        html += "</div>";
+      });
+
+      listElement.innerHTML = html;
+      listElement.style.display = "block";
+    } else {
+      // Hide the list
+      listElement.style.display = "none";
+    }
+  };
+
+  window.showConversationMessages = function (actionType, conversationIndex) {
+    const conversations = window.actionDetailsData[actionType] || [];
+    const conversation = conversations[conversationIndex];
+
+    if (!conversation) {
+      alert("No conversation found.");
+      return;
+    }
+
+    // Handle the actionConversations structure: {thread: {...}, actions: [...]}
+    const thread = conversation.thread || conversation;
+    const actions = conversation.actions || [];
+    const messages = thread.messages || [];
+
+    if (!messages || messages.length === 0) {
+      alert("No messages found for this conversation.");
+      return;
+    }
+
+    const threadId = thread.id || conversation.threadId || "Unknown ID";
+    const actionInfo =
+      actions.length > 0
+        ? actions.map((a) => a.actionType || "Unknown").join(", ")
+        : "No actions";
+
+    let html =
+      '<div style="max-width: 800px; max-height: 600px; overflow-y: auto; padding: 20px;">';
+    html +=
+      '<h3 style="margin-bottom: 20px; color: #1f2937;">Conversation Details</h3>';
+    html +=
+      '<div style="margin-bottom: 16px; padding: 12px; background: #f3f4f6; border-radius: 6px;">';
+    html += "<div><strong>Thread ID:</strong> " + threadId + "</div>";
+    html += "<div><strong>Action:</strong> " + actionInfo + "</div>";
+    html += "<div><strong>Messages:</strong> " + messages.length + "</div>";
+    html += "</div>";
+
+    html +=
+      '<div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; background: white;">';
+    messages.forEach(function (msg, index) {
+      const isUser = msg.role === "user";
+      const timestamp = msg.createdAt
+        ? new Date(msg.createdAt).toLocaleString()
+        : "Unknown time";
+
+      html +=
+        '<div style="margin-bottom: 16px; padding: 12px; border-radius: 8px; background: ' +
+        (isUser ? "#eff6ff" : "#f0fdf4") +
+        "; border-left: 4px solid " +
+        (isUser ? "#3b82f6" : "#10b981") +
+        ';">';
+      html +=
+        '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">';
+      html +=
+        '<strong style="color: ' +
+        (isUser ? "#1e40af" : "#059669") +
+        ';">' +
+        (isUser ? "User" : "AI Assistant") +
+        "</strong>";
+      html +=
+        '<span style="font-size: 12px; color: #6b7280;">' +
+        timestamp +
+        "</span>";
+      html += "</div>";
+      html +=
+        '<div style="color: #1f2937; line-height: 1.5;">' +
+        (msg.content || "No content") +
+        "</div>";
+      if (msg.action) {
+        html +=
+          '<div style="margin-top: 8px; padding: 6px; background: rgba(59, 130, 246, 0.1); border-radius: 4px; font-size: 12px; color: #1e40af;">';
+        html += "<strong>Action:</strong> " + msg.action;
+        html += "</div>";
+      }
+      html += "</div>";
+    });
+    html += "</div>";
+    html += "</div>";
+
+    // Create modal to show conversation
+    const modal = $("<div>", {
+      class: "modal-overlay",
+      css: {
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: "100%",
+        background: "rgba(0,0,0,0.5)",
+        zIndex: 10000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      },
+    });
+
+    const modalContent = $("<div>", {
+      css: {
+        background: "white",
+        borderRadius: "8px",
+        maxWidth: "90%",
+        maxHeight: "90%",
+        overflow: "hidden",
+        position: "relative",
+      },
+      html:
+        html +
+        '<button onclick="this.closest(\'.modal-overlay\').remove()" style="position: absolute; top: 10px; right: 10px; background: #ef4444; color: white; border: none; border-radius: 4px; padding: 8px 12px; cursor: pointer;">Close</button>',
+    });
+
+    modal.append(modalContent);
+    $("body").append(modal);
+
+    modal.on("click", function (e) {
+      if (e.target === modal[0]) {
+        modal.remove();
+      }
+    });
+  };
 
   // Function to start modern sync process with training banner
   function startModernSyncProcess() {
