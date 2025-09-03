@@ -38,7 +38,7 @@ function voicero_render_help_page_content() {
         'ajaxUrl' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('voicero_help_nonce'),
         'accessKey' => $access_key,
-        'apiUrl' => 'https://56b2c4656c5a.ngrok-free.app',
+        'apiUrl' => 'https://d37c011f0026.ngrok-free.app',
         'strings' => array(
             'loading' => 'Loading help modules...',
             'error' => 'Error loading help center',
@@ -244,7 +244,7 @@ function voicero_get_help_data() {
     }
 
     // Make request to external API (GET request with Authorization header)
-    $response = wp_remote_get('https://56b2c4656c5a.ngrok-free.app/api/helpCenter/get', array(
+    $response = wp_remote_get('https://d37c011f0026.ngrok-free.app/api/helpCenter/get', array(
         'headers' => array(
             'Authorization' => 'Bearer ' . $access_key,
         ),
@@ -303,7 +303,7 @@ function voicero_save_help_question() {
     );
 
     // Make request to external API
-    $response = wp_remote_post('https://56b2c4656c5a.ngrok-free.app/api/helpCenter/edit', array(
+    $response = wp_remote_post('https://d37c011f0026.ngrok-free.app/api/helpCenter/edit', array(
         'headers' => array(
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $access_key,
@@ -360,7 +360,7 @@ function voicero_add_help_question() {
     );
 
     // Make request to external API
-    $response = wp_remote_post('https://56b2c4656c5a.ngrok-free.app/api/helpCenter/add', array(
+    $response = wp_remote_post('https://d37c011f0026.ngrok-free.app/api/helpCenter/add', array(
         'headers' => array(
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $access_key,
@@ -413,7 +413,7 @@ function voicero_delete_help_question() {
     );
 
     // Make request to external API
-    $response = wp_remote_post('https://56b2c4656c5a.ngrok-free.app/api/helpCenter/delete', array(
+    $response = wp_remote_post('https://d37c011f0026.ngrok-free.app/api/helpCenter/delete', array(
         'headers' => array(
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $access_key,

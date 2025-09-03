@@ -831,7 +831,7 @@
 
       // Call API to add question
       const response = await fetch(
-        "https://56b2c4656c5a.ngrok-free.app/api/updateInterface/addQuestion",
+        "https://d37c011f0026.ngrok-free.app/api/updateInterface/addQuestion",
         {
           method: "POST",
           headers: {
@@ -896,7 +896,7 @@
         }
 
         const response = await fetch(
-          "https://56b2c4656c5a.ngrok-free.app/api/updateInterface/deleteQuestion",
+          "https://d37c011f0026.ngrok-free.app/api/updateInterface/deleteQuestion",
           {
             method: "POST",
             headers: {
@@ -1223,7 +1223,7 @@
 
       // Make API call to save interface settings
       const response = await fetch(
-        "https://56b2c4656c5a.ngrok-free.app/api/updateInterface/edit",
+        "https://d37c011f0026.ngrok-free.app/api/updateInterface/edit",
         {
           method: "POST",
           headers: {

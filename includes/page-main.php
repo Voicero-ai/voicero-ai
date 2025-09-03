@@ -59,6 +59,13 @@ function voicero_get_access_key() {
 function voicero_enqueue_scripts() {
     // Load external Voicero widget script on frontend
     if (!is_admin()) {
+        // Add frontend nonce support for AJAX calls
+        wp_localize_script('voicero-widget', 'voiceroFrontendConfig', [
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('voicero_frontend_nonce'),
+            'restUrl' => rest_url('voicero/v1/'),
+            'apiUrl' => defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://d37c011f0026.ngrok-free.app/api'
+        ]);
         // Get access key securely
         $access_key = voicero_get_access_key();
         

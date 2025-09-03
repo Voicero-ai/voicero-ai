@@ -30,7 +30,7 @@ function voicero_register_settings_scripts($hook) {
         'ajaxUrl' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('voicero_ajax_nonce'),
         'websiteId' => get_option('voicero_website_id', ''),
-        'apiUrl' => defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://56b2c4656c5a.ngrok-free.app/api',
+        'apiUrl' => defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://d37c011f0026.ngrok-free.app/api',
         'accessKey' => get_option('voicero_access_key', '')
     ));
 }

@@ -548,7 +548,7 @@ jQuery(document).ready(function ($) {
         </h3>
     `;
 
-    // Problem Resolution Rate
+    // Problem Resolution Rate and Key Stats
     if (overview.problem_resolution_rate) {
       const rate = overview.problem_resolution_rate;
       html += `
@@ -586,6 +586,71 @@ jQuery(document).ready(function ($) {
         </div>
       `;
     }
+
+    // Additional Stats Section
+    html += `
+      <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 24px;">
+        <h4 style="margin: 0 0 16px; color: #2271b1; font-size: 16px;">💰 Revenue & Activity Stats</h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
+          <div style="text-align: center;">
+            <div style="font-size: 32px; font-weight: 700; color: #22c55e;" class="analytics-revenue-amount">
+              $${
+                data.aiOverviewRevenue ? data.aiOverviewRevenue.amount || 0 : 0
+              }
+            </div>
+            <div style="color: #666; font-size: 14px;">Revenue Added to Cart</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 32px; font-weight: 700; color: #3b82f6;" class="analytics-text-chats">
+              ${globalStats ? globalStats.totalTextChats || 0 : 0}
+            </div>
+            <div style="color: #666; font-size: 14px;">Text Chats</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 32px; font-weight: 700; color: #8b5cf6;" class="analytics-voice-chats">
+              ${globalStats ? globalStats.totalVoiceChats || 0 : 0}
+            </div>
+            <div style="color: #666; font-size: 14px;">Voice Chats</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 32px; font-weight: 700; color: #f59e0b;" class="analytics-cart-actions">
+              ${
+                data.actionConversations
+                  ? data.actionConversations.cart
+                    ? data.actionConversations.cart.length || 0
+                    : 0
+                  : 0
+              }
+            </div>
+            <div style="color: #666; font-size: 14px;">Cart Actions</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 32px; font-weight: 700; color: #10b981;" class="analytics-order-actions">
+              ${
+                data.actionConversations
+                  ? data.actionConversations.orders
+                    ? data.actionConversations.orders.length || 0
+                    : 0
+                  : 0
+              }
+            </div>
+            <div style="color: #666; font-size: 14px;">Order Actions</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 32px; font-weight: 700; color: #ef4444;" class="analytics-movement-actions">
+              ${
+                data.actionConversations
+                  ? data.actionConversations.movement
+                    ? data.actionConversations.movement.length || 0
+                    : 0
+                  : 0
+              }
+            </div>
+            <div style="color: #666; font-size: 14px;">Movement Actions</div>
+          </div>
+        </div>
+      </div>
+    `;
 
     // Most Common Questions
     if (
@@ -905,7 +970,7 @@ jQuery(document).ready(function ($) {
               ${
                 data.id
                   ? `
-                <a href="https://56b2c4656c5a.ngrok-free.app/app/websites/website?id=${data.id}" 
+                <a href="https://d37c011f0026.ngrok-free.app/app/websites/website?id=${data.id}" 
                    target="_blank" 
                    class="button button-primary open-control-panel"
                    style="
@@ -2119,6 +2184,52 @@ jQuery(document).ready(function ($) {
 
       if (detailedData.stats.aiScrolls !== undefined) {
         $(".action-scrolls").text(detailedData.stats.aiScrolls);
+      }
+    }
+
+    // Update additional stats from globalStats and other data sources
+    if (detailedData.globalStats) {
+      if (detailedData.globalStats.totalTextChats !== undefined) {
+        $(".analytics-text-chats").text(
+          detailedData.globalStats.totalTextChats
+        );
+      }
+
+      if (detailedData.globalStats.totalVoiceChats !== undefined) {
+        $(".analytics-voice-chats").text(
+          detailedData.globalStats.totalVoiceChats
+        );
+      }
+    }
+
+    // Update revenue amount from aiOverviewRevenue
+    if (
+      detailedData.aiOverviewRevenue &&
+      detailedData.aiOverviewRevenue.amount !== undefined
+    ) {
+      $(".analytics-revenue-amount").text(
+        "$" + (detailedData.aiOverviewRevenue.amount || 0)
+      );
+    }
+
+    // Update action conversation counts
+    if (detailedData.actionConversations) {
+      if (detailedData.actionConversations.cart) {
+        $(".analytics-cart-actions").text(
+          detailedData.actionConversations.cart.length || 0
+        );
+      }
+
+      if (detailedData.actionConversations.orders) {
+        $(".analytics-order-actions").text(
+          detailedData.actionConversations.orders.length || 0
+        );
+      }
+
+      if (detailedData.actionConversations.movement) {
+        $(".analytics-movement-actions").text(
+          detailedData.actionConversations.movement.length || 0
+        );
       }
     }
   }

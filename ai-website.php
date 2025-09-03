@@ -33,7 +33,7 @@ function voicero_activate_plugin() {
 }
 
 // Define the API base URL
-define('VOICERO_API_URL', 'https://56b2c4656c5a.ngrok-free.app/api');
+define('VOICERO_API_URL', 'https://d37c011f0026.ngrok-free.app/api');
 // Define the plugin version
 define('VOICERO_VERSION', '1.0');
 
@@ -287,8 +287,9 @@ function voicero_check_connection() {
         wp_send_json_error(['message' => esc_html__('No access key found', 'voicero-ai')]);
     }
 
-    $response = wp_remote_get(VOICERO_API_URL . '/connect?access_token=' . urlencode($access_key), [
+    $response = wp_remote_get(VOICERO_API_URL . '/connect', [
         'headers' => [
+            'Authorization' => 'Bearer ' . $access_key,
             'Content-Type' => 'application/json',
             'Accept' => 'application/json'
         ],
@@ -1142,8 +1143,9 @@ function voicero_render_admin_page() {
             $access_key = sanitize_text_field(wp_unslash($_POST['access_key']));
             
             // Verify the key is valid by making a test request
-            $test_response = wp_remote_get(VOICERO_API_URL . '/connect?access_token=' . urlencode($access_key), [
+            $test_response = wp_remote_get(VOICERO_API_URL . '/connect', [
                 'headers' => [
+                    'Authorization' => 'Bearer ' . $access_key,
                     'Content-Type' => 'application/json'
                 ],
                 'timeout' => 15,
@@ -1205,7 +1207,7 @@ function voicero_render_admin_page() {
     
     // Generate the connection URL with nonce
     $connect_url = wp_nonce_url(
-        "https://56b2c4656c5a.ngrok-free.app/app/connect?site_url={$encoded_site_url}&redirect_url={$encoded_admin_url}",
+        "https://d37c011f0026.ngrok-free.app/app/connect?site_url={$encoded_site_url}&redirect_url={$encoded_admin_url}",
         'voicero_connect'
     );
 
@@ -1232,10 +1234,10 @@ function voicero_render_admin_page() {
                                    name="access_key" 
                                    value="<?php echo esc_attr($saved_key); ?>" 
                                    class="regular-text"
-                                   placeholder="<?php esc_attr_e('Enter your 64-character access key', 'voicero-ai'); ?>"
-                                   pattern=".{64,64}"
-                                   title="<?php esc_attr_e('Access key should be exactly 64 characters long', 'voicero-ai'); ?>">
-                            <p class="description"><?php esc_html_e('Your access key should be exactly 64 characters long.', 'voicero-ai'); ?></p>
+                                   placeholder="<?php esc_attr_e('Enter your access key', 'voicero-ai'); ?>"
+                                   pattern="(\$2[aby]\$\d{2}\$[A-Za-z0-9./]{53}|.{64,64})"
+                                   title="<?php esc_attr_e('Access key should be either a bcrypt hash or 64 characters long', 'voicero-ai'); ?>">
+                            <p class="description"><?php esc_html_e('Your access key should be either a bcrypt hash (e.g., $2a$12$...) or exactly 64 characters long.', 'voicero-ai'); ?></p>
                         </td>
                     </tr>
                 </table>
@@ -1312,7 +1314,7 @@ function voicero_admin_enqueue_assets($hook_suffix) {
             'ajaxUrl'   => admin_url('admin-ajax.php'),
             'nonce'     => wp_create_nonce('voicero_ajax_nonce'),
             'accessKey' => $access_key,
-            'apiUrl'    => defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://56b2c4656c5a.ngrok-free.app/api',
+            'apiUrl'    => defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://d37c011f0026.ngrok-free.app/api',
             'websiteId' => get_option('voicero_website_id', '')
         ]
     );

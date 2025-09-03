@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
 
 // Define the API base URL if not already defined
 if (!defined('VOICERO_API_URL')) {
-    define('VOICERO_API_URL', 'https://56b2c4656c5a.ngrok-free.app/api');
+    define('VOICERO_API_URL', 'https://d37c011f0026.ngrok-free.app/api');
 }
 
 /**
@@ -183,6 +183,64 @@ add_action('rest_api_init', function() {
                 return current_user_can('manage_options') || 
                        (isset($_SERVER['HTTP_X_VOICERO_API']) && $_SERVER['HTTP_X_VOICERO_API'] === get_option('voicero_api_secret', ''));
             },
+        ]
+    );
+    
+    // Customer data endpoint
+    register_rest_route(
+        'voicero/v1',
+        '/getCustomer',
+        [
+            'methods'             => ['GET', 'POST'],
+            'callback'            => 'voicero_get_customer_rest',
+            'permission_callback' => '__return_true',
+            'args' => [
+                'email' => [
+                    'required' => false,
+                    'validate_callback' => function($param, $request, $key) {
+                        return empty($param) || is_email($param);
+                    }
+                ],
+                'user_id' => [
+                    'required' => false,
+                    'validate_callback' => function($param, $request, $key) {
+                        return empty($param) || is_numeric($param);
+                    }
+                ]
+            ]
+        ]
+    );
+    
+    // Cart data endpoint
+    register_rest_route(
+        'voicero/v1',
+        '/getCart',
+        [
+            'methods'             => ['GET', 'POST'],
+            'callback'            => 'voicero_get_cart_rest',
+            'permission_callback' => '__return_true'
+        ]
+    );
+    
+    // Public nonce endpoint for frontend
+    register_rest_route(
+        'voicero/v1',
+        '/getNonce',
+        [
+            'methods'             => 'GET',
+            'callback'            => 'voicero_get_nonce_rest',
+            'permission_callback' => '__return_true'
+        ]
+    );
+    
+    // Debug endpoint to check authentication status
+    register_rest_route(
+        'voicero/v1',
+        '/debug-auth',
+        [
+            'methods'             => 'GET',
+            'callback'            => 'voicero_debug_auth_rest',
+            'permission_callback' => '__return_true'
         ]
     );
 });
@@ -568,7 +626,7 @@ function voicero_tts_proxy(WP_REST_Request $request) {
 
     /* 2. Forward to Voicero API ------------------------------------------- */
     $response = wp_remote_post(
-        'https://56b2c4656c5a.ngrok-free.app/api/tts',
+        'https://d37c011f0026.ngrok-free.app/api/tts',
         [
             'headers'   => [
                 'Authorization'            => 'Bearer ' . $access_key,
@@ -698,7 +756,7 @@ function voicero_whisper_proxy($request) {
     $body .= "--$boundary--\r\n";
     
     // Send request to local API
-    $response = wp_remote_post('https://56b2c4656c5a.ngrok-free.app/api/whisper', [
+    $response = wp_remote_post('https://d37c011f0026.ngrok-free.app/api/whisper', [
         'headers' => [
             'Authorization' => 'Bearer ' . $access_key,
             'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
@@ -804,7 +862,7 @@ function voicero_support_proxy($request) {
     );
     
     // Forward to support API
-    $response = wp_remote_post('https://56b2c4656c5a.ngrok-free.app/api/support/help', [
+    $response = wp_remote_post('https://d37c011f0026.ngrok-free.app/api/support/help', [
         'headers' => [
             'Authorization' => 'Bearer ' . $access_key,
             'Content-Type' => 'application/json',
@@ -1931,7 +1989,7 @@ function voicero_get_ai_history_ajax() {
 
     // 7) Make the API request
     // Allow the API base URL to be configured via constant
-    $api_base = defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://56b2c4656c5a.ngrok-free.app/api';
+    $api_base = defined('VOICERO_API_URL') ? VOICERO_API_URL : 'https://d37c011f0026.ngrok-free.app/api';
     $endpoint  = trailingslashit($api_base) . 'aiHistory';
 
     // Log the request data for debugging
@@ -3850,4 +3908,321 @@ function voicero_toggle_status_proxy(WP_REST_Request $request) {
     
     // Forward the response
     return new WP_REST_Response($response_data, $response_code);
+}
+
+/**
+ * REST API callback function to get customer data
+ */
+function voicero_get_customer_rest($request) {
+    // Check if WooCommerce is active
+    if (!class_exists('WooCommerce')) {
+        return new WP_REST_Response([
+            'success' => false,
+            'message' => 'WooCommerce is not active'
+        ], 400);
+    }
+
+    // Get parameters
+    $email = $request->get_param('email');
+    $user_id = $request->get_param('user_id');
+    
+    // Initialize response
+    $customer_data = array();
+    $current_user = null;
+
+    // Try to determine the current user from various sources
+    $current_user = null;
+    
+    // Method 1: Check if user is specified by email parameter
+    if (!empty($email)) {
+        $user = get_user_by('email', sanitize_email($email));
+        if ($user) {
+            $current_user = $user;
+        } else {
+            return new WP_REST_Response([
+                'success' => false,
+                'message' => 'Customer not found with this email'
+            ], 404);
+        }
+    } 
+    // Method 2: Check if user is specified by user_id parameter
+    elseif (!empty($user_id)) {
+        $user = get_user_by('ID', intval($user_id));
+        if ($user) {
+            $current_user = $user;
+        } else {
+            return new WP_REST_Response([
+                'success' => false,
+                'message' => 'Customer not found with this ID'
+            ], 404);
+        }
+    } 
+    // Method 3: Try to get current logged-in user (REST API context)
+    else {
+        // First try the standard WordPress way
+        if (is_user_logged_in()) {
+            $current_user = wp_get_current_user();
+        } else {
+            // Try to determine user from cookies manually for REST API context
+            $current_user = wp_get_current_user();
+            
+            // If we still don't have a user, try to parse WordPress auth cookies
+            if (!$current_user || $current_user->ID === 0) {
+                // Try to validate auth cookies manually
+                $user_id = wp_validate_auth_cookie('', 'logged_in');
+                if ($user_id) {
+                    $current_user = get_user_by('ID', $user_id);
+                }
+            }
+        }
+        
+        // If still no user found, return guest data instead of error
+        if (!$current_user || $current_user->ID === 0) {
+            return new WP_REST_Response([
+                'success' => true,
+                'data' => [
+                    'id' => 0,
+                    'logged_in' => false,
+                    'is_guest' => true,
+                    'message' => 'No user logged in - guest session'
+                ]
+            ], 200);
+        }
+    }
+
+    if ($current_user) {
+        // Basic user data
+        $customer_data['id'] = $current_user->ID;
+        $customer_data['first_name'] = $current_user->first_name;
+        $customer_data['last_name'] = $current_user->last_name;
+        $customer_data['email'] = $current_user->user_email;
+        $customer_data['username'] = $current_user->user_login;
+        $customer_data['display_name'] = $current_user->display_name;
+        $customer_data['logged_in'] = is_user_logged_in() && $current_user->ID === get_current_user_id();
+        
+        // Get billing information
+        $customer_data['billing'] = array(
+            'first_name' => get_user_meta($current_user->ID, 'billing_first_name', true),
+            'last_name' => get_user_meta($current_user->ID, 'billing_last_name', true),
+            'company' => get_user_meta($current_user->ID, 'billing_company', true),
+            'address_1' => get_user_meta($current_user->ID, 'billing_address_1', true),
+            'address_2' => get_user_meta($current_user->ID, 'billing_address_2', true),
+            'city' => get_user_meta($current_user->ID, 'billing_city', true),
+            'state' => get_user_meta($current_user->ID, 'billing_state', true),
+            'postcode' => get_user_meta($current_user->ID, 'billing_postcode', true),
+            'country' => get_user_meta($current_user->ID, 'billing_country', true),
+            'email' => get_user_meta($current_user->ID, 'billing_email', true),
+            'phone' => get_user_meta($current_user->ID, 'billing_phone', true)
+        );
+        
+        // Get shipping information
+        $customer_data['shipping'] = array(
+            'first_name' => get_user_meta($current_user->ID, 'shipping_first_name', true),
+            'last_name' => get_user_meta($current_user->ID, 'shipping_last_name', true),
+            'company' => get_user_meta($current_user->ID, 'shipping_company', true),
+            'address_1' => get_user_meta($current_user->ID, 'shipping_address_1', true),
+            'address_2' => get_user_meta($current_user->ID, 'shipping_address_2', true),
+            'city' => get_user_meta($current_user->ID, 'shipping_city', true),
+            'state' => get_user_meta($current_user->ID, 'shipping_state', true),
+            'postcode' => get_user_meta($current_user->ID, 'shipping_postcode', true),
+            'country' => get_user_meta($current_user->ID, 'shipping_country', true)
+        );
+        
+        // Get recent orders (last 10)
+        $args = array(
+            'customer_id' => $current_user->ID,
+            'limit' => 10,
+            'orderby' => 'date',
+            'order' => 'DESC'
+        );
+        
+        $orders = wc_get_orders($args);
+        $recent_orders = array();
+        
+        foreach ($orders as $order) {
+            $order_data = array(
+                'id' => $order->get_id(),
+                'number' => $order->get_order_number(),
+                'status' => $order->get_status(),
+                'status_name' => wc_get_order_status_name($order->get_status()),
+                'date_created' => $order->get_date_created() ? $order->get_date_created()->format('c') : '',
+                'date_created_formatted' => $order->get_date_created() ? $order->get_date_created()->format('F j, Y') : '',
+                'total' => $order->get_total(),
+                'total_formatted' => wc_price($order->get_total()),
+                'currency' => $order->get_currency(),
+                'payment_method' => $order->get_payment_method_title(),
+                'billing_email' => $order->get_billing_email(),
+                'billing_phone' => $order->get_billing_phone()
+            );
+            
+            // Add line items
+            $line_items = array();
+            foreach ($order->get_items() as $item_id => $item) {
+                $product = $item->get_product();
+                $line_items[] = array(
+                    'id' => $item_id,
+                    'product_id' => $item->get_product_id(),
+                    'name' => $item->get_name(),
+                    'quantity' => $item->get_quantity(),
+                    'total' => $item->get_total(),
+                    'total_formatted' => wc_price($item->get_total()),
+                    'price' => $product ? $product->get_price() : 0,
+                    'sku' => $product ? $product->get_sku() : '',
+                    'permalink' => $product ? get_permalink($product->get_id()) : ''
+                );
+            }
+            
+            $order_data['line_items'] = $line_items;
+            $recent_orders[] = $order_data;
+        }
+        
+        $customer_data['recent_orders'] = $recent_orders;
+        
+        // Calculate total spent and order count
+        $customer = new WC_Customer($current_user->ID);
+        $customer_data['total_spent'] = $customer->get_total_spent();
+        $customer_data['total_spent_formatted'] = wc_price($customer->get_total_spent());
+        $customer_data['orders_count'] = $customer->get_order_count();
+        
+        // Add registration date
+        $customer_data['date_registered'] = $current_user->user_registered;
+        $customer_data['date_registered_formatted'] = date('F j, Y', strtotime($current_user->user_registered));
+        
+        // Add customer roles
+        $customer_data['roles'] = $current_user->roles;
+        
+        // Get cart data if user is logged in and has a cart
+        if ($customer_data['logged_in'] && !empty(WC()->cart)) {
+            $cart = WC()->cart;
+            $customer_data['cart'] = array(
+                'items_count' => $cart->get_cart_contents_count(),
+                'total' => $cart->get_total(),
+                'total_formatted' => wc_price($cart->get_total()),
+                'subtotal' => $cart->get_subtotal(),
+                'subtotal_formatted' => wc_price($cart->get_subtotal()),
+                'tax_total' => $cart->get_total_tax(),
+                'tax_total_formatted' => wc_price($cart->get_total_tax())
+            );
+        }
+    }
+    
+    return new WP_REST_Response([
+        'success' => true,
+        'data' => $customer_data
+    ], 200);
+}
+
+/**
+ * REST API callback function to get cart data
+ */
+function voicero_get_cart_rest($request) {
+    // Check if WooCommerce is active
+    if (!class_exists('WooCommerce')) {
+        return new WP_REST_Response([
+            'success' => false,
+            'message' => 'WooCommerce is not active'
+        ], 400);
+    }
+    
+    // Get cart data
+    $cart = WC()->cart;
+    
+    if (empty($cart)) {
+        return new WP_REST_Response([
+            'success' => true,
+            'data' => array()
+        ], 200);
+    }
+    
+    $cart_data = array(
+        'items_count' => $cart->get_cart_contents_count(),
+        'total' => $cart->get_total(),
+        'total_formatted' => wc_price($cart->get_total()),
+        'subtotal' => $cart->get_subtotal(),
+        'subtotal_formatted' => wc_price($cart->get_subtotal()),
+        'tax_total' => $cart->get_total_tax(),
+        'tax_total_formatted' => wc_price($cart->get_total_tax()),
+        'items' => array()
+    );
+    
+    // Get cart items
+    foreach ($cart->get_cart() as $cart_item_key => $cart_item) {
+        $product = $cart_item['data'];
+        $product_id = $cart_item['product_id'];
+        
+        $item_data = array(
+            'key' => $cart_item_key,
+            'product_id' => $product_id,
+            'name' => $product->get_name(),
+            'quantity' => $cart_item['quantity'],
+            'price' => $product->get_price(),
+            'price_formatted' => wc_price($product->get_price()),
+            'line_total' => $cart_item['line_total'],
+            'line_total_formatted' => wc_price($cart_item['line_total']),
+            'line_tax' => $cart_item['line_tax'],
+            'line_tax_formatted' => wc_price($cart_item['line_tax'])
+        );
+        
+        // Add product URL and image
+        $item_data['url'] = get_permalink($product_id);
+        $item_data['image'] = wp_get_attachment_url($product->get_image_id());
+        $item_data['sku'] = $product->get_sku();
+        
+        $cart_data['items'][] = $item_data;
+    }
+    
+    return new WP_REST_Response([
+        'success' => true,
+        'data' => $cart_data
+    ], 200);
+}
+
+/**
+ * REST API callback function to get a nonce for frontend use
+ */
+function voicero_get_nonce_rest($request) {
+    return new WP_REST_Response([
+        'success' => true,
+        'data' => [
+            'nonce' => wp_create_nonce('voicero_frontend_nonce'),
+            'ajax_nonce' => wp_create_nonce('voicero_ajax_nonce')
+        ]
+    ], 200);
+}
+
+/**
+ * Debug endpoint to check authentication status
+ */
+function voicero_debug_auth_rest($request) {
+    $current_user = wp_get_current_user();
+    $is_logged_in = is_user_logged_in();
+    
+    // Try to get user from auth cookies
+    $auth_cookie_user_id = wp_validate_auth_cookie('', 'logged_in');
+    
+    // Get all cookies for debugging
+    $cookies = [];
+    if (isset($_COOKIE)) {
+        foreach ($_COOKIE as $name => $value) {
+            if (strpos($name, 'wordpress') !== false || strpos($name, 'wp_') !== false) {
+                $cookies[$name] = substr($value, 0, 50) . '...';
+            }
+        }
+    }
+    
+    return new WP_REST_Response([
+        'success' => true,
+        'data' => [
+            'is_logged_in' => $is_logged_in,
+            'current_user_id' => $current_user->ID,
+            'current_user_login' => $current_user->user_login,
+            'current_user_email' => $current_user->user_email,
+            'auth_cookie_user_id' => $auth_cookie_user_id,
+            'cookies_found' => array_keys($cookies),
+            'cookie_count' => count($cookies),
+            'request_headers' => getallheaders() ?: [],
+            'server_request_uri' => $_SERVER['REQUEST_URI'] ?? '',
+            'is_ssl' => is_ssl()
+        ]
+    ], 200);
 }
